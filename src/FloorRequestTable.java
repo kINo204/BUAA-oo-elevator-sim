@@ -20,7 +20,7 @@ public class FloorRequestTable {
     }
 
     public synchronized HashSet<PersonRequest> getFloorWaiters(int floor, int dirFlag) {
-        HashSet<PersonRequest> ret = new HashSet<>(table.get(floor));
+        HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));
         HashSet<PersonRequest> toRemove = new HashSet<>();
         Iterator<PersonRequest> iterator = ret.iterator();
         PersonRequest personRequest;

@@ -1,4 +1,5 @@
 import com.oocourse.elevator1.TimableOutput;
+import jdk.nashorn.internal.codegen.DumpBytecode;
 
 public class ElevatorThread extends Thread {
     private final Elevator elevator;
@@ -21,10 +22,11 @@ public class ElevatorThread extends Thread {
             while (true) {
                 // exiting condition: finish all commands
                 if (elevator.isCommandEmpty() && elevator.isCommandEnd()) {
+                    Debugger.println(eid + " exits");
                     return;
                 }
 
-                command = elevator.nextCommand();
+                command = elevator.nextCommand(false);
                 if (command == null) {
                     continue;
                 }
@@ -82,20 +84,22 @@ public class ElevatorThread extends Thread {
         // TODO loading all before closing the door
         // loading and unloading passengers
         // loading
-        Command cur = command;
-        elevator.removeCurCommand();  // the current command finished, remove it
-        if (!elevator.isCommandEmpty()) { // if there isn't next command, leave at once
-            Command nxt = elevator.nextCommand();
-            if (nxt.getDestination() > elevator.getFloor()) { // will go upwards
-                elevator.loadPassengers(1, eid);
-            } else if (nxt.getDestination() < elevator.getFloor()) { // will go downwards
-                elevator.loadPassengers(-1, eid);
-            } else { // the next command is STAY
-            }
-        }
+        // TODO what direction to go next?
+        int dirFlag = elevator.nextDirection();
+        Debugger.println("nextdir=" + dirFlag);
+        elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
+        elevator.loadPassengers(dirFlag, eid);
+        //        if (elevator.nextCommand(true) != null) { // if there isn't next command, leave at once
+        //            Command nxt = elevator.nextCommand(true);
+        //            if (nxt.getDestination() > elevator.getFloor()) { // will go upwards
+        //            } else if (nxt.getDestination() < elevator.getFloor()) { // will go downwards
+        //                elevator.removeCurCommand(-1);  // the current command finished, remove it
+        //                elevator.loadPassengers(-1, eid);
+        //            } else { // the next command is STAY
+        //            }
+        //        }
         // unloading
         elevator.unloadPassengers(eid);
-
         // finished closing the door
         TimableOutput.println(
                 String.format("CLOSE-%d-%d", elevator.getFloor(), eid)

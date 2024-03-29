@@ -56,6 +56,19 @@ public class Elevator {
         UP, DOWN, STAY
     }
 
+    public synchronized int nextDirection() {
+        boolean ret = commandList.hasEntryInDirection(floor, direction);
+        notifyAll();
+        switch (direction) {
+            case UP:
+                return ret ? 1 : -1;
+            case DOWN:
+                return ret ? -1 : 1;
+            default:
+                return 0; // TODO
+        }
+    }
+
     private Direction direction;
 
     Elevator() {
@@ -86,20 +99,23 @@ public class Elevator {
 
 
     // TODO should we clone a command?
-    public synchronized Command nextCommand() throws InterruptedException {
+    public synchronized Command nextCommand(boolean jumpCurrent) throws InterruptedException {
         if (commandList.isEmpty()) {
             wait();  // command not ended, but no new commands yet
         }
         if (commandList.isEmpty()) {
             return null;  // command might have ended, loop and try again
         }
-        Command ret = commandList.nextCommand(floor, direction);
+        Debugger.println(commandList);
+        Command ret = commandList.nextCommand(floor, direction, jumpCurrent);
+        Debugger.println(ret);
+        Debugger.println("edir: " + direction);
         notifyAll();
         return ret;
     }
 
-    public synchronized void removeCurCommand() {
-        commandList.removeCurCommand(floor, direction);
+    public synchronized void removeCurCommand(int dirFlag) {
+        commandList.removeCurCommand(floor, dirFlag); // TODO what direction
         notifyAll();
     }
 

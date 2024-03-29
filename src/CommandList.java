@@ -1,4 +1,6 @@
 import com.oocourse.elevator1.PersonRequest;
+import jdk.nashorn.internal.codegen.DumpBytecode;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,7 +34,7 @@ public class CommandList {
     //                look for a U/D same as the current direction; or an E
     //                if unable, look for a U/D of different direction
     //            c. if nothing found, do not give a command
-    public synchronized Command nextCommand(int floor, Elevator.Direction direction) {
+    public synchronized Command nextCommand(int floor, Elevator.Direction direction, boolean jumpCurrent) {
         // TODO after a STAY command, the elevator always chooses to go up
         int la1;
         int la2;
@@ -43,22 +45,27 @@ public class CommandList {
         int dirFlag;
         if (direction != Elevator.Direction.DOWN) {
             dirFlag = 1;
-            la1 = lookingLength(floor, 1, CommandTableEntry.Direction.UP);
-            la2 = lookingLength(floor, 1, CommandTableEntry.Direction.END);
-            lb  = lookingLength(floor, 1, CommandTableEntry.Direction.DOWN);
-            lc1 = lookingLength(floor, -1, CommandTableEntry.Direction.DOWN);
-            lc2 = lookingLength(floor, -1, CommandTableEntry.Direction.END);
-            ld  = lookingLength(floor, -1, CommandTableEntry.Direction.UP);
+            la1 = lookingLength(true, floor, 1, CommandTableEntry.Direction.UP, jumpCurrent);
+            la2 = lookingLength(true, floor, 1, CommandTableEntry.Direction.END, jumpCurrent);
+            lb  = lookingLength(false, floor, 1, CommandTableEntry.Direction.DOWN, jumpCurrent);
+            lc1 = lookingLength(true, floor, -1, CommandTableEntry.Direction.DOWN, jumpCurrent);
+            lc2 = lookingLength(true, floor, -1, CommandTableEntry.Direction.END, jumpCurrent);
+            ld  = lookingLength(false, floor, -1, CommandTableEntry.Direction.UP, jumpCurrent);
         } else {
             dirFlag = -1;
-            la1 = lookingLength(floor, 1, CommandTableEntry.Direction.DOWN);
-            la2 = lookingLength(floor, 1, CommandTableEntry.Direction.END);
-            lb  = lookingLength(floor, 1, CommandTableEntry.Direction.UP);
-            lc1 = lookingLength(floor, -1, CommandTableEntry.Direction.UP);
-            lc2 = lookingLength(floor, -1, CommandTableEntry.Direction.END);
-            ld  = lookingLength(floor, -1, CommandTableEntry.Direction.DOWN);
+            la1 = lookingLength(true, floor, -1, CommandTableEntry.Direction.DOWN, jumpCurrent);
+            la2 = lookingLength(true, floor, -1, CommandTableEntry.Direction.END, jumpCurrent);
+            lb  = lookingLength(false, floor, -1, CommandTableEntry.Direction.UP, jumpCurrent);
+            lc1 = lookingLength(true, floor, 1, CommandTableEntry.Direction.UP, jumpCurrent);
+            lc2 = lookingLength(true, floor, 1, CommandTableEntry.Direction.END, jumpCurrent);
+            ld  = lookingLength(false, floor, 1, CommandTableEntry.Direction.DOWN, jumpCurrent);
         }
         int destination;
+        Debugger.println(String.format("%d %d %d %d %d %d", la1, la2, lb, lc1, lc2, ld));
+        if (la1 == -1 && la2 == -1 && lb == -1) {
+            Debugger.println("enter");
+            dirFlag = -dirFlag;
+        }
         if (la1 != -1 && la2 != -1) {
             destination = floor + dirFlag * (Math.min(la1, la2));
         } else if (la1 != -1 || la2 != -1) {
@@ -74,20 +81,68 @@ public class CommandList {
         } else {
             return null;  // the table is empty
         }
+        Debugger.println(String.format("dst=%d+%d*xxx", floor, dirFlag));
         return new Command(destination, 0);
+    }
+
+    public synchronized boolean hasEntryInDirection(int floor, Elevator.Direction direction) {
+        int dirFlag;
+        if (direction == Elevator.Direction.UP) {
+            dirFlag = 1;
+        } else if (direction == Elevator.Direction.DOWN) {
+            dirFlag = -1;
+        } else {
+            dirFlag = 0;
+        }
+        // if there's an entry in the direction
+        for (int i = floor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
+            if ((i != floor - 1) && (!commandTable.get(i).isEmpty())) {
+                return true;
+            }
+        }
+        // if the current entry could generate an entry later
+        for (CommandTableEntry entry : commandTable.get(floor - 1)) {
+            int dir;
+            if (entry.getDirection() == CommandTableEntry.Direction.UP) {
+                dir = 1;
+            } else if (entry.getDirection() == CommandTableEntry.Direction.DOWN) {
+                dir = -1;
+            } else {
+                dir = 2;
+            }
+            if (dir == dirFlag) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // -1 indicates no entry found
     private synchronized int lookingLength(
-            int startFloor, int dirFlag, CommandTableEntry.Direction targetDir) {
+            boolean shortest, int startFloor, int dirFlag, CommandTableEntry.Direction targetDir, boolean jumpCurrent
+    ) {
+        int last = -1;
         for (int i = startFloor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
             for (CommandTableEntry entry : commandTable.get(i)) {
                 if (entry.getDirection() == targetDir) {
-                    return dirFlag * (i - startFloor + 1);
+                    if (jumpCurrent) {
+                        if (i == startFloor - 1) {
+                            continue;
+                        }
+                    }
+                    last = dirFlag * (i - startFloor + 1);
+                    if (shortest) {
+                        return dirFlag * (i - startFloor + 1);
+                    }
+
                 }
             }
         }
-        return -1;
+        if (!shortest) {
+            return last;
+        } else {
+            return -1;
+        }
     }
 
     public synchronized boolean isEmpty() {
@@ -114,7 +169,7 @@ public class CommandList {
 
     // when the elevator thread finish closing the door, it informs the command list
     // to perform refreshing through this method
-    public synchronized void removeCurCommand(int floor, Elevator.Direction direction) {
+    public synchronized void removeCurCommand(int floor, int dirFlag) {
         HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();
         CommandTableEntry entry;
@@ -127,7 +182,7 @@ public class CommandList {
                 // for a non-END entry, only process it when of the same direction
                 case UP:
                     // create a new entry of END, and remove
-                    if (direction != Elevator.Direction.DOWN) {
+                    if (dirFlag != -1) {
                         addEntry(
                                 entry.getNextDestination(),
                                 new CommandTableEntry(CommandTableEntry.Direction.END, 0)
@@ -137,7 +192,7 @@ public class CommandList {
                     break;
                 case DOWN:
                     // same as UP
-                    if (direction != Elevator.Direction.UP) {
+                    if (dirFlag != 1) {
                         addEntry(
                                 entry.getNextDestination(),
                                 new CommandTableEntry(CommandTableEntry.Direction.END, 0)
@@ -186,9 +241,9 @@ public class CommandList {
     @Override
     public synchronized String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("@CommandList{");
+        sb.append("@CommandList{\n");
         for (int i = 0; i < maxFloor - minFloor + 1; i++) {
-            sb.append(i).append(":\n");
+            sb.append(i).append(":");
             for (CommandTableEntry c : commandTable.get(i)) {
                 sb.append(c.toString());
             }
