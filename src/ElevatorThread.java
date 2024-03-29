@@ -47,6 +47,7 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionMoving() throws InterruptedException {
+        Debugger.println("Moving");
         // save direction for further use(only a new command modify the elevator's direction)
         if (command.getDestination() == elevator.getFloor()) {
             elevator.setDirection(Elevator.Direction.STAY);
@@ -71,6 +72,7 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionOpening() throws InterruptedException {
+        Debugger.println("Opening");
         // start opening the door
         TimableOutput.println(
                 String.format("OPEN-%d-%d", elevator.getFloor(), eid)
@@ -80,6 +82,7 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionClosing() throws InterruptedException {
+        Debugger.println("Closing");
         sleep(closeTime);
         // TODO loading all before closing the door
         // loading and unloading passengers

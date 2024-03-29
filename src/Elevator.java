@@ -57,6 +57,9 @@ public class Elevator {
     }
 
     public synchronized int nextDirection() {
+        if (direction == Direction.STAY) {
+            return 1; // forever look up
+        }
         boolean ret = commandList.hasEntryInDirection(floor, direction);
         notifyAll();
         switch (direction) {
