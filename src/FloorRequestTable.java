@@ -19,6 +19,19 @@ public class FloorRequestTable {
         }
     }
 
+    public synchronized int getFloorWaiterNum(int floor, int dirFlag) {
+        int num = 0;
+        for (PersonRequest personRequest : table.get(floor - 1)) {
+            int dir = personRequest.getFromFloor() < personRequest.getToFloor() ?
+                    1 : -1; // TODO same floor not considered
+            if (dir == dirFlag) {
+                num++;
+            }
+        }
+        notifyAll();
+        return num;
+    }
+
     public synchronized HashSet<PersonRequest> getFloorWaiters(int floor, int dirFlag, int restSpace) {
         HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));
         HashSet<PersonRequest> toRemove = new HashSet<>();

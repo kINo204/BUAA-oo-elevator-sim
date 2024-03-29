@@ -1,10 +1,10 @@
 import com.oocourse.elevator1.TimableOutput;
-import jdk.nashorn.internal.codegen.DumpBytecode;
 
 public class ElevatorThread extends Thread {
     private final Elevator elevator;
     private final int eid;
     private Command command;
+    private boolean jump = false; // if last floor still has waiters, jump
 
     // elevator running time constants(in ms)
     private final int moveTime = 400;
@@ -26,7 +26,8 @@ public class ElevatorThread extends Thread {
                     return;
                 }
 
-                command = elevator.nextCommand(false);
+                command = elevator.nextCommand(jump);
+                jump = false;
                 if (command == null) {
                     continue;
                 }
@@ -90,8 +91,10 @@ public class ElevatorThread extends Thread {
         // TODO what direction to go next?
         int dirFlag = elevator.nextDirection();
         Debugger.println("nextdir=" + dirFlag);
-        elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
-        elevator.loadPassengers(dirFlag, eid);
+        jump = elevator.loadPassengers(dirFlag, eid);
+        if (!jump) {
+            elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
+        }
         //        if (elevator.nextCommand(true) != null) { // if there isn't next command, leave at once
         //            Command nxt = elevator.nextCommand(true);
         //            if (nxt.getDestination() > elevator.getFloor()) { // will go upwards

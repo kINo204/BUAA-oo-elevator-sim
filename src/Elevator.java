@@ -15,11 +15,12 @@ public class Elevator {
     private final int minFloor = 1;
     private final int maxFloor = 11;
 
-    public synchronized void loadPassengers(int dirFlag, int eid) {
+    public synchronized boolean loadPassengers(int dirFlag, int eid) {
         int restSpace = maxSpace - passengers.size();
         if (restSpace == 0) {
-            return;
+            return true;
         }
+        boolean overFlow = restSpace < floorRequestTable.getFloorWaiterNum(floor, dirFlag);
         HashSet<PersonRequest> loadedPassengers = floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
         passengers.addAll(loadedPassengers);
         for (PersonRequest personRequest : loadedPassengers) {
@@ -31,6 +32,7 @@ public class Elevator {
             );
         }
         notifyAll();
+        return overFlow;
     }
 
     public synchronized void unloadPassengers(int eid) {
