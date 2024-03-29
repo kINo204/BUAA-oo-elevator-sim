@@ -1,5 +1,4 @@
 import com.oocourse.elevator1.PersonRequest;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,14 +34,14 @@ public class FloorRequestTable {
                 toRemove.add(personRequest);
             }
         }
-        table.get(floor).removeAll(toRemove); // loaded waiters deleted
+        table.get(floor - 1).removeAll(toRemove); // loaded waiters deleted
         notifyAll();
         return ret;
     }
 
     public synchronized void addRequest(PersonRequest request) {
         // add the request to its from-floor
-        table.get(request.getFromFloor()).add(request);
+        table.get(request.getFromFloor() - 1).add(request);
         notifyAll();
     }
 }

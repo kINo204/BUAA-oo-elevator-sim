@@ -80,10 +80,10 @@ public class CommandList {
     // -1 indicates no entry found
     private synchronized int lookingLength(
             int startFloor, int dirFlag, CommandTableEntry.Direction targetDir) {
-        for (int i = startFloor; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
+        for (int i = startFloor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
             for (CommandTableEntry entry : commandTable.get(i)) {
                 if (entry.getDirection() == targetDir) {
-                    return dirFlag * (i - startFloor);
+                    return dirFlag * (i - startFloor + 1);
                 }
             }
         }
@@ -115,7 +115,7 @@ public class CommandList {
     // when the elevator thread finish closing the door, it informs the command list
     // to perform refreshing through this method
     public synchronized void removeCurCommand(int floor, Elevator.Direction direction) {
-        HashSet<CommandTableEntry> hashSet = commandTable.get(floor);
+        HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();
         CommandTableEntry entry;
         while (iterator.hasNext()) {
@@ -159,7 +159,7 @@ public class CommandList {
     public synchronized void addEntry(int floor, CommandTableEntry cte) {
         // look for identical CTE in the from_floor
         boolean match = false;
-        for (CommandTableEntry entry : commandTable.get(floor)) {
+        for (CommandTableEntry entry : commandTable.get(floor - 1)) {
             if (entry.equals(cte)) {
                 match = true;
                 break;
@@ -167,7 +167,7 @@ public class CommandList {
         }
         // if there isn't any, add the new one to the from_floor
         if (!match) {
-            commandTable.get(floor).add(cte);
+            commandTable.get(floor - 1).add(cte);
         }
     }
 

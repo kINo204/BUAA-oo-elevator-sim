@@ -1,4 +1,3 @@
-import com.oocourse.elevator1.PersonRequest;
 import com.oocourse.elevator1.TimableOutput;
 
 public class ElevatorThread extends Thread {
