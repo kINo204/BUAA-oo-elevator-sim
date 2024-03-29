@@ -8,6 +8,7 @@ import java.util.Iterator;
 public class Elevator {
     private final CommandList commandList;  // list of commands waiting to be executed
     private final HashSet<PersonRequest> passengers;
+    private final int maxSpace = 6;
     // a table of request scheduled to be handled by the current elevator
     private final FloorRequestTable floorRequestTable;  // the fr_table
     private int floor;  // current floor
@@ -15,7 +16,11 @@ public class Elevator {
     private final int maxFloor = 11;
 
     public synchronized void loadPassengers(int dirFlag, int eid) {
-        HashSet<PersonRequest> loadedPassengers = floorRequestTable.getFloorWaiters(floor, dirFlag);
+        int restSpace = maxSpace - passengers.size();
+        if (restSpace == 0) {
+            return;
+        }
+        HashSet<PersonRequest> loadedPassengers = floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
         passengers.addAll(loadedPassengers);
         for (PersonRequest personRequest : loadedPassengers) {
             TimableOutput.println(

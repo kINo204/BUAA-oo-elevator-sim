@@ -19,19 +19,25 @@ public class FloorRequestTable {
         }
     }
 
-    public synchronized HashSet<PersonRequest> getFloorWaiters(int floor, int dirFlag) {
+    public synchronized HashSet<PersonRequest> getFloorWaiters(int floor, int dirFlag, int restSpace) {
         HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));
         HashSet<PersonRequest> toRemove = new HashSet<>();
-        Iterator<PersonRequest> iterator = ret.iterator();
-        PersonRequest personRequest;
-        while (iterator.hasNext()) {
-            personRequest = iterator.next();
+        int num = 0;
+        for (PersonRequest personRequest : ret) {
             int dir = personRequest.getFromFloor() < personRequest.getToFloor() ?
                     1 : -1; // TODO same floor not considered
-            if (dir != dirFlag) { // request not the same direction as elevator
-                iterator.remove();
-            } else {
+            if (dir == dirFlag) {
                 toRemove.add(personRequest);
+                num++;
+                if (num == restSpace) {
+                    break;
+                }
+            }
+        }
+        Iterator<PersonRequest> iterator = ret.iterator();
+        while (iterator.hasNext()) {
+            if (!toRemove.contains(iterator.next())) {
+                iterator.remove();
             }
         }
         table.get(floor - 1).removeAll(toRemove); // loaded waiters deleted
