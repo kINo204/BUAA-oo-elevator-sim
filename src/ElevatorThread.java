@@ -20,8 +20,8 @@ public class ElevatorThread extends Thread {
             while (true) {
                 Debugger.dbgPrintln(
                         String.format(
-                                "@Thread{ElevatorThread,eid=%d, cur_flr=%d}: running",
-                                eid, elevator.getFloor()
+                                "@Thread{ElevatorThread,eid=%d,cur_flr=%d,load=%d}: running",
+                                eid, elevator.getFloor(), elevator.getLoad()
                         )
                 );
                 // exiting condition: finish all commands
@@ -94,7 +94,11 @@ public class ElevatorThread extends Thread {
         }
         // if the moving stage has been finished:
         if (command.getDestination() == elevator.getFloor()) {
+            //if (elevator.isFull()) {
+            // TODO don't open and close if full already OPTIMIZE
+            //} else {
             elevator.setState(Elevator.State.OPENING);          // open the door next
+            //}
         }
     }
 
@@ -109,11 +113,9 @@ public class ElevatorThread extends Thread {
 
     private void motionClosing() throws InterruptedException {
         sleep(closeTime);
-        // TODO loading all before closing the door
-        // loading and unloading passengers
-        // loading
-        // TODO what direction to go next?
         int dirFlag = elevator.nextDirection();
+        Debugger.dbgPrintln("dir_load_rem=" + dirFlag);
+        // loading
         jump = elevator.loadPassengers(dirFlag, eid);
         if (!jump) {
             elevator.removeCurCommand(dirFlag);  // the current command finished, remove it

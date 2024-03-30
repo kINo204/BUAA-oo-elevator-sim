@@ -84,30 +84,22 @@ public class CommandList {
     }
 
     public synchronized boolean hasEntryInDirection(int floor, Elevator.Direction direction) {
-        int dirFlag;
-        if (direction == Elevator.Direction.UP) {
-            dirFlag = 1;
-        } else if (direction == Elevator.Direction.DOWN) {
-            dirFlag = -1;
-        } else {
-            dirFlag = 0;
+        if (direction == Elevator.Direction.STAY) {
+            return false;  // direction STAY ambiguous, assert false
         }
-        // if there's an entry in the direction
+        int dirFlag = direction == Elevator.Direction.UP ? 1 : -1;
+        // if there's an entry in the direction(cur floor excluded)
         for (int i = floor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
             if ((i != floor - 1) && (!commandTable.get(i).isEmpty())) {
                 return true;
             }
         }
-        // if the current entry could generate an entry later
+        // if the current floor's entry could generate an END entry later
         for (CommandTableEntry entry : commandTable.get(floor - 1)) {
-            int dir;
-            if (entry.getDirection() == CommandTableEntry.Direction.UP) {
-                dir = 1;
-            } else if (entry.getDirection() == CommandTableEntry.Direction.DOWN) {
-                dir = -1;
-            } else {
-                dir = 2;
+            if (entry.getDirection() == CommandTableEntry.Direction.END) {
+                continue;  // END entry can't create a new entry
             }
+            int dir = entry.getDirection() == CommandTableEntry.Direction.UP ? 1 : -1;
             if (dir == dirFlag) {
                 return true;
             }
@@ -122,6 +114,7 @@ public class CommandList {
             CommandTableEntry.Direction targetDir, boolean jumpCurrent
     ) {
         int last = -1;
+        assert dirFlag != 0;
         for (int i = startFloor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
             for (CommandTableEntry entry : commandTable.get(i)) {
                 if (entry.getDirection() == targetDir) {
@@ -130,10 +123,11 @@ public class CommandList {
                             continue;
                         }
                     }
+                    // refresh `last`
                     last = dirFlag * (i - startFloor + 1);
                     if (shortest) {
                         notifyAll();
-                        return dirFlag * (i - startFloor + 1);
+                        return last;
                     }
 
                 }
@@ -178,7 +172,7 @@ public class CommandList {
         while (iterator.hasNext()) {
             entry = iterator.next();
             switch (entry.getDirection()) {
-                case END:  // simply delete an END entry
+                case END:  // simply delete an END entry, has nothing to do with dirFlag!
                     iterator.remove();
                     break;
                 // for a non-END entry, only process it when of the same direction

@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-// TODO not thread safe
+// thread safe
 public class FloorRequestTable {
     private final ArrayList<HashSet<PersonRequest>> table;
     private final int minFloor;
@@ -23,7 +23,7 @@ public class FloorRequestTable {
         int num = 0;
         for (PersonRequest personRequest : table.get(floor - 1)) {
             int dir = personRequest.getFromFloor() < personRequest.getToFloor() ?
-                    1 : -1; // TODO same floor not considered
+                    1 : -1; // same floor not allowed
             if (dir == dirFlag) {
                 num++;
             }
@@ -39,7 +39,7 @@ public class FloorRequestTable {
         int num = 0;
         for (PersonRequest personRequest : ret) {
             int dir = personRequest.getFromFloor() < personRequest.getToFloor() ?
-                    1 : -1; // TODO same floor not considered
+                    1 : -1; // same floor not allowed
             if (dir == dirFlag) {
                 toRemove.add(personRequest);
                 num++;

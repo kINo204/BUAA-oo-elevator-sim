@@ -1,4 +1,4 @@
-// TODO not thread safe
+// thread safe
 public class CommandTableEntry {
     public enum Direction {
         UP, DOWN, END
