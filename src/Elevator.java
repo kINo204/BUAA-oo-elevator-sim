@@ -154,6 +154,7 @@ public class Elevator {
                 return true;
             }
         }
+        notifyAll();
         return false;
     }
 
