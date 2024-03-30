@@ -52,7 +52,7 @@ public class Main {
         try {
             elevatorInput.close();
         } catch (IOException e) {
-            System.out.println("Elevator.close(): IOException caught");  // TODO what exception?
+            System.out.println("Elevator.close(): IOException caught");
         }
     }
 }

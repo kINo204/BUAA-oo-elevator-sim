@@ -35,11 +35,13 @@ public class ElevatorThread extends Thread {
                     return;
                 }
 
+                // get the next command
                 command = elevator.nextCommand(jump);
-                jump = false;
+                jump = false; // the jump information is used, thus outdated
                 if (command == null) {
                     continue;
                 }
+                // enter specific motion of current state
                 switch (elevator.getState()) {
                     case MOVING:
                         motionMoving();
@@ -95,7 +97,7 @@ public class ElevatorThread extends Thread {
         // if the moving stage has been finished:
         if (command.getDestination() == elevator.getFloor()) {
             //if (elevator.isFull()) {
-            // TODO don't open and close if full already OPTIMIZE
+            // TODO don't open and close if already full OPTIMIZE
             //} else {
             elevator.setState(Elevator.State.OPENING);          // open the door next
             //}
@@ -112,6 +114,7 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionClosing() throws InterruptedException {
+        // TODO wait before closing the door
         sleep(closeTime);
         int dirFlag = elevator.nextDirection();
         Debugger.dbgPrintln("dir_load_rem=" + dirFlag);

@@ -4,8 +4,27 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-// TODO not thread safe
+// thread safe
+
+/**
+ * As part of the single-elevator control algorithm, the command list conserves
+ * a command table, and provides various methods of modifying or getting info
+ * from the table. Generally, the class receive requests, modify itself with
+ * the elevator's feedback, and provide calculated next command for the elevator.
+ */
 public class CommandList {
+    /**
+     * A table of command table entries listed in their own floor. This is the
+     * key data structure of command list.
+     * <p>
+     *     The command table illustrates the elevator's current tasks, and
+     *     provide a data structure for elevator to figure out its next command.
+     *     It is dynamically modified by new requests, and the elevator's signal
+     *     of completion of its tasks.
+     * </p>
+     *
+     * @see CommandTableEntry
+     */
     private final ArrayList<HashSet<CommandTableEntry>> commandTable;
     private final int minFloor;
     private final int maxFloor;
@@ -21,20 +40,26 @@ public class CommandList {
         end = false;
     }
 
-    //    This method travels through the CLT and figure out the next command.
-    //
-    //    Algorithm
-    //        newCommand:(dst, 0)
-    //        set the dst to the floor of the first found item below:
-    //            a. from the current floor, to the current direction:
-    //                look for a U/D same as the current direction; or an E
-    //                if unable, look for a U/D of different direction
-    //            b. if still unable, look to the reversed direction:
-    //                look for a U/D same as the current direction; or an E
-    //                if unable, look for a U/D of different direction
-    //            c. if nothing found, do not give a command
+    /**
+     * Walk through the command table and figure out the next command.
+     * @param floor         the current floor of the elevator
+     * @param direction     the direction state of the elevator(its direction in the last movement)
+     * @param jumpCurrent   if true, jump over the command when it's on the current floor, e.g. when
+     *                      the elevator is full and won't stop on any command
+     * @return              the next command which the elevator should carry out
+     */
     public synchronized Command nextCommand(
             int floor, Elevator.Direction direction, boolean jumpCurrent) {
+        //    Algorithm
+        //        newCommand:(dst, 0)
+        //        set the dst to the floor of the first found item below:
+        //            a. from the current floor, to the current direction:
+        //                look for a U/D same as the current direction; or an E
+        //                if unable, look for a U/D of different direction
+        //            b. if still unable, look to the reversed direction:
+        //                look for a U/D same as the current direction; or an E
+        //                if unable, look for a U/D of different direction
+        //            c. if nothing found, do not give a command
         // TODO after a STAY command, the elevator always chooses to go up
         int la1;
         int la2;
@@ -83,7 +108,26 @@ public class CommandList {
         return new Command(destination, 0);
     }
 
+    /**
+     * Walk through the command table to find out if there exists a valid CTE
+     * in the given direction.
+     * <p>
+     *     A valid CTE includes any CTE to the given direction from the
+     *     current floor(the current floor itself excluded), or a
+     *     non-END CTE in the current floor whose next destination(where it
+     *     will generate an END entry later) is in the desired direction.
+     * </p>
+     * @implNote STAY is an invalid direction! The method has not enough
+     * information to deal with it, and will give a meaningless false value.
+     *
+     * @param floor         the current floor the elevator is at
+     * @param direction     the desired searching direction, often directly from
+     *                      the elevator's current direction.
+     * @return              a boolean value indicating if there is a valid CTE in
+     * the given direction
+     */
     public synchronized boolean hasEntryInDirection(int floor, Elevator.Direction direction) {
+        // NOTE: direction STAY invalid
         if (direction == Elevator.Direction.STAY) {
             return false;  // direction STAY ambiguous, assert false
         }
@@ -163,8 +207,16 @@ public class CommandList {
         notifyAll();
     }
 
-    // when the elevator thread finish closing the door, it informs the command list
-    // to perform refreshing through this method
+    /**
+     * Clear the specified entries in the command table.
+     * <p>
+     *     When the elevator thread finish closing the door, it informs the command list
+     *     to perform refreshing by calling the method.
+     * </p>
+     * @param floor the current floor the elevator is at
+     * @param dirFlag the direction the elevator is going next. NOT the elevator's
+     *                direction state!
+     */
     public synchronized void removeCurCommand(int floor, int dirFlag) {
         HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();

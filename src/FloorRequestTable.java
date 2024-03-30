@@ -4,7 +4,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 // thread safe
+
+/**
+ * A structure listing requests in their from-floors.
+ * It keeps the information of requests, adds new requests to the specified floor in the table,
+ * and removes the loaded passengers when informed by the elevator.
+ */
 public class FloorRequestTable {
+    /**
+     * A table recording all requests' status, listed by there from-floor.
+     */
     private final ArrayList<HashSet<PersonRequest>> table;
     private final int minFloor;
     private final int maxFloor;
@@ -19,6 +28,15 @@ public class FloorRequestTable {
         }
     }
 
+    /**
+     * Search the fr_table to find out how many waiters can be picked
+     * up in the given floor by the elevator of the given direction.
+     * @param floor the target floor to be inquired
+     * @param dirFlag the direction the elevator is going next
+     * @return the number of waiters(requests) matching the requirement
+     * @implNote    The dirFlag is not the direction of the elevator itself,
+     *              but where it's going next.
+     */
     public synchronized int getFloorWaiterNum(int floor, int dirFlag) {
         int num = 0;
         for (PersonRequest personRequest : table.get(floor - 1)) {
@@ -32,6 +50,17 @@ public class FloorRequestTable {
         return num;
     }
 
+    /**
+     * Read the fr_table and give a list of loadable waiters.
+     * <p>
+     *     If the elevator can't carry all waiters available, the
+     *     method only get part of it so that the elevator barely be filled.
+     * </p>
+     * @param floor         the floor to search
+     * @param dirFlag       the direction the elevator is going next
+     * @param restSpace     the space left on the elevator
+     * @return              a set of waiters satisfying the conditions
+     */
     public synchronized HashSet<PersonRequest> getFloorWaiters(
             int floor, int dirFlag, int restSpace) {
         HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));

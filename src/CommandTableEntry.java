@@ -5,6 +5,9 @@ public class CommandTableEntry {
     }
 
     private final Direction direction;
+    /**
+     * The next destination of a CTE, if it's of type UP or DOWN(a starting CTE).
+     */
     private final int nextDestination;
 
     CommandTableEntry(Direction direction, int nextDestination) {

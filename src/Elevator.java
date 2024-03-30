@@ -63,6 +63,17 @@ public class Elevator {
         notifyAll();
     }
 
+    /**
+     * Figure out which direction the elevator should go next.
+     * <p>
+     *     The method search along the elevator's last direction,
+     *     and decides if it should reverse its direction next.
+     * </p>
+     * @implNote If the elevator's direction is STAY, the method
+     * will consider both sides(up and down); if not enough info is
+     * get, it automatically returns the direction UP.
+     * @return the next direction for the elevator
+     */
     public synchronized int nextDirection() {
         // ret = false if direction is STAY
         boolean ret = commandList.hasEntryInDirection(floor, direction);
@@ -87,6 +98,13 @@ public class Elevator {
     }
 
     // TODO should we clone a command?
+
+    /**
+     * If the command list is not empty, ask it for a next command.
+     * @param jumpCurrent if true, jump over the command when it's on the current floor
+     * @return the next command for the elevator
+     * @throws InterruptedException if the current thread is interrupted in waiting
+     */
     public synchronized Command nextCommand(boolean jumpCurrent) throws InterruptedException {
         if (commandList.isEmpty()) {
             wait();  // command not ended, but no new commands yet
@@ -102,19 +120,22 @@ public class Elevator {
     }
 
     public synchronized void removeCurCommand(int dirFlag) {
-        commandList.removeCurCommand(floor, dirFlag); // TODO what direction
+        commandList.removeCurCommand(floor, dirFlag);
         notifyAll();
     }
 
     public synchronized boolean loadPassengers(int dirFlag, int eid) {
+        // calculate space left on elevator
         int restSpace = maxSpace - passengers.size();
         if (restSpace == 0) {
             return true;
         }
         final boolean overFlow = restSpace < floorRequestTable.getFloorWaiterNum(floor, dirFlag);
+        // get loaded passengers from fr_table and load them
         HashSet<PersonRequest> loadedPassengers =
                 floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
         passengers.addAll(loadedPassengers);
+        // print loading messages
         for (PersonRequest personRequest : loadedPassengers) {
             Debugger.timePrintln(
                     String.format(
