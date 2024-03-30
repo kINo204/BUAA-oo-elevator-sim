@@ -148,6 +148,15 @@ public class Elevator {
         return overFlow;
     }
 
+    public synchronized boolean needUnloading() {
+        for (PersonRequest personRequest : passengers) {
+            if (personRequest.getToFloor() == floor) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public synchronized void unloadPassengers(int eid) {
         Iterator<PersonRequest> iterator = passengers.iterator();
         PersonRequest personRequest;

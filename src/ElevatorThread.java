@@ -96,11 +96,13 @@ public class ElevatorThread extends Thread {
         }
         // if the moving stage has been finished:
         if (command.getDestination() == elevator.getFloor()) {
-            //if (elevator.isFull()) {
-            // TODO don't open and close if already full OPTIMIZE
-            //} else {
-            elevator.setState(Elevator.State.OPENING);          // open the door next
-            //}
+            // if the elevator is full and only loading required on this floor,
+            // jump the command once
+            if (elevator.isFull() && !elevator.needUnloading()) {
+                jump = true; // jump the command once
+            } else {
+                elevator.setState(Elevator.State.OPENING);          // open the door next
+            }
         }
     }
 
