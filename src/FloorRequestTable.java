@@ -32,7 +32,8 @@ public class FloorRequestTable {
         return num;
     }
 
-    public synchronized HashSet<PersonRequest> getFloorWaiters(int floor, int dirFlag, int restSpace) {
+    public synchronized HashSet<PersonRequest> getFloorWaiters(
+            int floor, int dirFlag, int restSpace) {
         HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));
         HashSet<PersonRequest> toRemove = new HashSet<>();
         int num = 0;

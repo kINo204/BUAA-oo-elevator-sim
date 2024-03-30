@@ -118,7 +118,8 @@ public class CommandList {
 
     // -1 indicates no entry found
     private synchronized int lookingLength(
-            boolean shortest, int startFloor, int dirFlag, CommandTableEntry.Direction targetDir, boolean jumpCurrent
+            boolean shortest, int startFloor, int dirFlag,
+            CommandTableEntry.Direction targetDir, boolean jumpCurrent
     ) {
         int last = -1;
         for (int i = startFloor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {

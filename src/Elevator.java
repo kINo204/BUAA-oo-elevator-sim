@@ -19,8 +19,9 @@ public class Elevator {
         if (restSpace == 0) {
             return true;
         }
-        boolean overFlow = restSpace < floorRequestTable.getFloorWaiterNum(floor, dirFlag);
-        HashSet<PersonRequest> loadedPassengers = floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
+        final boolean overFlow = restSpace < floorRequestTable.getFloorWaiterNum(floor, dirFlag);
+        HashSet<PersonRequest> loadedPassengers =
+                floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
         passengers.addAll(loadedPassengers);
         for (PersonRequest personRequest : loadedPassengers) {
             Debugger.timePrintln(

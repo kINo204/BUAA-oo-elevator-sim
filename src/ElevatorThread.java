@@ -118,15 +118,6 @@ public class ElevatorThread extends Thread {
         if (!jump) {
             elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
         }
-        //        if (elevator.nextCommand(true) != null) { // if there isn't next command, leave at once
-        //            Command nxt = elevator.nextCommand(true);
-        //            if (nxt.getDestination() > elevator.getFloor()) { // will go upwards
-        //            } else if (nxt.getDestination() < elevator.getFloor()) { // will go downwards
-        //                elevator.removeCurCommand(-1);  // the current command finished, remove it
-        //                elevator.loadPassengers(-1, eid);
-        //            } else { // the next command is STAY
-        //            }
-        //        }
         // unloading
         elevator.unloadPassengers(eid);
         // finished closing the door
