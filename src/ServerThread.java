@@ -31,9 +31,14 @@ public class ServerThread extends Thread {
     @Override
     public void run() {
         while (true) {
+            Debugger.dbgPrintln(
+                    "@Thread{ServerThread}: running"
+            );
             // Exiting condition. EMPTY means no requests left, and END means no more new requests.
             if (requestQueue.isEmpty() && requestQueue.isEnd()) {
-                // TODO notify other components that this thread ends
+                Debugger.dbgPrintln(
+                        "@Thread{ServerThread}: exiting"
+                );
                 for (Elevator elevator : elevators) {
                     elevator.setEnd();
                 }

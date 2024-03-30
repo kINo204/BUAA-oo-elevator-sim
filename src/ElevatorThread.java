@@ -1,5 +1,3 @@
-import com.oocourse.elevator1.TimableOutput;
-
 public class ElevatorThread extends Thread {
     private final Elevator elevator;
     private final int eid;
@@ -20,9 +18,20 @@ public class ElevatorThread extends Thread {
     public void run() {
         try {
             while (true) {
+                Debugger.dbgPrintln(
+                        String.format(
+                                "@Thread{ElevatorThread,eid=%d, cur_flr=%d}: running",
+                                eid, elevator.getFloor()
+                        )
+                );
                 // exiting condition: finish all commands
                 if (elevator.isCommandEmpty() && elevator.isCommandEnd()) {
-                    Debugger.println(eid + " exits");
+                    Debugger.dbgPrintln(
+                            String.format(
+                                    "@Thread{ElevatorThread,eid=%d}: exiting",
+                                    eid
+                            )
+                    );
                     return;
                 }
 
@@ -36,9 +45,21 @@ public class ElevatorThread extends Thread {
                         motionMoving();
                         break;
                     case OPENING:
+                        Debugger.dbgPrintln(
+                                String.format(
+                                        "@Thread{ElevatorThread,eid=%d}: enter opening",
+                                        eid
+                                )
+                        );
                         motionOpening();
                         break;
                     case CLOSING:
+                        Debugger.dbgPrintln(
+                                String.format(
+                                        "@Thread{ElevatorThread,eid=%d}: enter closing",
+                                        eid
+                                )
+                        );
                         motionClosing();
                         break;
                     default:
@@ -48,7 +69,6 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionMoving() throws InterruptedException {
-        Debugger.println("Moving");
         // save direction for further use(only a new command modify the elevator's direction)
         if (command.getDestination() == elevator.getFloor()) {
             elevator.setDirection(Elevator.Direction.STAY);
@@ -57,12 +77,18 @@ public class ElevatorThread extends Thread {
         } else { // command.getDst() < elevator.getFloor()
             elevator.setDirection(Elevator.Direction.DOWN);
         }
+        Debugger.dbgPrintln(
+                String.format(
+                        "@Thread{ElevatorThread,eid=%d}: enter moving=%s",
+                        eid, elevator.getDirection()
+                )
+        );
         // move one floor
         if (elevator.getDirection() != Elevator.Direction.STAY) {
             sleep(moveTime);
             elevator.moveOneFloor(elevator.getDirection());
             // output arrival info on each move
-            TimableOutput.println(
+            Debugger.timePrintln(
                     String.format("ARRIVE-%d-%d", elevator.getFloor(), eid)
             );
         }
@@ -73,9 +99,8 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionOpening() throws InterruptedException {
-        Debugger.println("Opening");
         // start opening the door
-        TimableOutput.println(
+        Debugger.timePrintln(
                 String.format("OPEN-%d-%d", elevator.getFloor(), eid)
         );
         sleep(openTime);
@@ -83,14 +108,12 @@ public class ElevatorThread extends Thread {
     }
 
     private void motionClosing() throws InterruptedException {
-        Debugger.println("Closing");
         sleep(closeTime);
         // TODO loading all before closing the door
         // loading and unloading passengers
         // loading
         // TODO what direction to go next?
         int dirFlag = elevator.nextDirection();
-        Debugger.println("nextdir=" + dirFlag);
         jump = elevator.loadPassengers(dirFlag, eid);
         if (!jump) {
             elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
@@ -107,7 +130,7 @@ public class ElevatorThread extends Thread {
         // unloading
         elevator.unloadPassengers(eid);
         // finished closing the door
-        TimableOutput.println(
+        Debugger.timePrintln(
                 String.format("CLOSE-%d-%d", elevator.getFloor(), eid)
         );
         elevator.setState(Elevator.State.MOVING);  // now the elevator is free to move again

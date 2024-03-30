@@ -1,5 +1,4 @@
 import com.oocourse.elevator1.PersonRequest;
-import com.oocourse.elevator1.TimableOutput;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,7 +23,7 @@ public class Elevator {
         HashSet<PersonRequest> loadedPassengers = floorRequestTable.getFloorWaiters(floor, dirFlag, restSpace);
         passengers.addAll(loadedPassengers);
         for (PersonRequest personRequest : loadedPassengers) {
-            TimableOutput.println(
+            Debugger.timePrintln(
                     String.format(
                             "IN-%d-%d-%d",
                             personRequest.getPersonId(), floor, eid
@@ -41,7 +40,7 @@ public class Elevator {
         while (iterator.hasNext()) {
             personRequest = iterator.next();
             if (personRequest.getToFloor() == floor) {
-                TimableOutput.println(
+                Debugger.timePrintln(
                         String.format(
                                 "OUT-%d-%d-%d",
                                 personRequest.getPersonId(), floor, eid
@@ -116,10 +115,8 @@ public class Elevator {
         if (commandList.isEmpty()) {
             return null;  // command might have ended, loop and try again
         }
-        Debugger.println(commandList);
         Command ret = commandList.nextCommand(floor, direction, jumpCurrent);
-        Debugger.println(ret);
-        Debugger.println("edir: " + direction);
+        Debugger.dbgPrintln(ret);  // debug print the command get
         notifyAll();
         return ret;
     }

@@ -40,7 +40,7 @@ public class CommandTableEntry {
         } else {
             str += "E";
         }
-        str += ",nxt_dst=";
+        str += ",nextDst=";
         str += nextDestination;
         str += "}";
         return str;

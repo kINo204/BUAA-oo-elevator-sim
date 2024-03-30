@@ -1,9 +1,18 @@
-public class Debugger {
-    private static final boolean debug = false;
+import com.oocourse.elevator1.TimableOutput;
 
-    public static void println(Object o) {
-        if (debug) {
+public class Debugger {
+    private static final boolean debugOut = false;
+    private static final boolean output = true;
+
+    public static void dbgPrintln(Object o) {
+        if (debugOut) {
             System.out.println(o);
+        }
+    }
+
+    public static void timePrintln(Object o) {
+        if (output) {
+            TimableOutput.println(o);
         }
     }
 }

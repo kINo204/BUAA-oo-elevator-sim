@@ -1,5 +1,4 @@
 import com.oocourse.elevator1.PersonRequest;
-import jdk.nashorn.internal.codegen.DumpBytecode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,7 +33,8 @@ public class CommandList {
     //                look for a U/D same as the current direction; or an E
     //                if unable, look for a U/D of different direction
     //            c. if nothing found, do not give a command
-    public synchronized Command nextCommand(int floor, Elevator.Direction direction, boolean jumpCurrent) {
+    public synchronized Command nextCommand(
+            int floor, Elevator.Direction direction, boolean jumpCurrent) {
         // TODO after a STAY command, the elevator always chooses to go up
         int la1;
         int la2;
@@ -61,9 +61,7 @@ public class CommandList {
             ld  = lookingLength(false, floor, 1, CommandTableEntry.Direction.DOWN, jumpCurrent);
         }
         int destination;
-        Debugger.println(String.format("%d %d %d %d %d %d", la1, la2, lb, lc1, lc2, ld));
         if (la1 == -1 && la2 == -1 && lb == -1) {
-            Debugger.println("enter");
             dirFlag = -dirFlag;
         }
         if (la1 != -1 && la2 != -1) {
@@ -81,7 +79,7 @@ public class CommandList {
         } else {
             return null;  // the table is empty
         }
-        Debugger.println(String.format("dst=%d+%d*xxx", floor, dirFlag));
+        notifyAll();
         return new Command(destination, 0);
     }
 
@@ -114,6 +112,7 @@ public class CommandList {
                 return true;
             }
         }
+        notifyAll();
         return false;
     }
 
@@ -132,12 +131,14 @@ public class CommandList {
                     }
                     last = dirFlag * (i - startFloor + 1);
                     if (shortest) {
+                        notifyAll();
                         return dirFlag * (i - startFloor + 1);
                     }
 
                 }
             }
         }
+        notifyAll();
         if (!shortest) {
             return last;
         } else {
@@ -203,12 +204,14 @@ public class CommandList {
                 default:
             }
         }
+        notifyAll();
     }
 
     public synchronized void addEntry(PersonRequest request) {
         // create CTE from the request
         CommandTableEntry cte = requestToCte(request);
         addEntry(request.getFromFloor(), cte);
+        notifyAll();
     }
 
     public synchronized void addEntry(int floor, CommandTableEntry cte) {
@@ -224,6 +227,7 @@ public class CommandList {
         if (!match) {
             commandTable.get(floor - 1).add(cte);
         }
+        notifyAll();
     }
 
     private synchronized CommandTableEntry requestToCte(PersonRequest request) {
@@ -235,6 +239,7 @@ public class CommandList {
         } else {
             direction = CommandTableEntry.Direction.END; // TODO = is END direction?
         }
+        notifyAll();
         return new CommandTableEntry(direction, request.getToFloor());
     }
 
@@ -243,13 +248,14 @@ public class CommandList {
         StringBuilder sb = new StringBuilder();
         sb.append("@CommandList{\n");
         for (int i = 0; i < maxFloor - minFloor + 1; i++) {
-            sb.append(i).append(":");
+            sb.append(i).append(": ");
             for (CommandTableEntry c : commandTable.get(i)) {
                 sb.append(c.toString());
             }
             sb.append("\n");
         }
         sb.append("}");
+        notifyAll();
         return sb.toString();
     }
 }

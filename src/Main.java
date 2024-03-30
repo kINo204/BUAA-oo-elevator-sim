@@ -25,6 +25,7 @@ public class Main {
         // Reading requests from STDIN.
         ElevatorInput elevatorInput = new ElevatorInput(System.in);
         while (true) {
+            Debugger.dbgPrintln("@Thread{Main.readRequests}: running");
             // try to get a new request
             /* NOTE: THESE FORMATS ARE SPECIALIZED IN HW5
               Structure of a request:
@@ -42,6 +43,7 @@ public class Main {
             PersonRequest request = elevatorInput.nextPersonRequest();
             if (request == null) {  // failed - no more new request from STDIN
                 requestQueue.setEnd(true);
+                Debugger.dbgPrintln("@Thread{Main.readRequests}: exiting");
                 break;
             } else {  // succeeded
                 requestQueue.addRequest(request);
