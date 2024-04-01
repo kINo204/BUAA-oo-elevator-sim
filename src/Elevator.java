@@ -85,8 +85,11 @@ public class Elevator {
             case DOWN:
                 return ret ? -1 : 1;
             default: // STAY
+                Debugger.dbgPrintln("STAY:");
                 boolean upward = commandList.hasEntryInDirection(floor, Direction.UP);
                 boolean downward = commandList.hasEntryInDirection(floor, Direction.DOWN);
+                Debugger.dbgPrintln("\thasEntryInDir Up=" + upward);
+                Debugger.dbgPrintln("\thasEntryInDir Dw=" + downward);
                 if (upward) { // upward is of higher priority
                     return 1;
                 } else if (downward) {
@@ -119,8 +122,8 @@ public class Elevator {
         return ret;
     }
 
-    public synchronized void removeCurCommand(int dirFlag) {
-        commandList.removeCurCommand(floor, dirFlag);
+    public synchronized void removeCurCommand(int dirFlag, boolean jump) {
+        commandList.removeCurCommand(floor, dirFlag, jump);
         notifyAll();
     }
 

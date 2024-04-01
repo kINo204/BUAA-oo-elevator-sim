@@ -20,8 +20,9 @@ public class ElevatorThread extends Thread {
             while (true) {
                 Debugger.dbgPrintln(
                         String.format(
-                                "@Thread{ElevatorThread,eid=%d,cur_flr=%d,load=%d}: running",
-                                eid, elevator.getFloor(), elevator.getLoad()
+                                "@Thread{ElevatorThread,eid=%d,dir=%s,cur_flr=%d,load=%d}: running",
+                                eid, elevator.getDirection(),
+                                elevator.getFloor(), elevator.getLoad()
                         )
                 );
                 // exiting condition: finish all commands
@@ -120,13 +121,12 @@ public class ElevatorThread extends Thread {
         sleep(closeTime);
         int dirFlag = elevator.nextDirection();
         Debugger.dbgPrintln("dir_load_rem=" + dirFlag);
-        // loading
-        jump = elevator.loadPassengers(dirFlag, eid);
-        if (!jump) {
-            elevator.removeCurCommand(dirFlag);  // the current command finished, remove it
-        }
         // unloading
         elevator.unloadPassengers(eid);
+        // loading
+        jump = elevator.loadPassengers(dirFlag, eid);
+        Debugger.dbgPrintln("set jump=" + jump);
+        elevator.removeCurCommand(dirFlag, jump);  // the current command finished, remove it
         // finished closing the door
         Debugger.timePrintln(
                 String.format("CLOSE-%d-%d", elevator.getFloor(), eid)

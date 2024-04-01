@@ -210,14 +210,17 @@ public class CommandList {
     /**
      * Clear the specified entries in the command table.
      * <p>
-     *     When the elevator thread finish closing the door, it informs the command list
-     *     to perform refreshing by calling the method.
+     * When the elevator thread finish closing the door, it informs the command list
+     * to perform refreshing by calling the method.
      * </p>
-     * @param floor the current floor the elevator is at
+     *
+     * @param floor   the current floor the elevator is at
      * @param dirFlag the direction the elevator is going next. NOT the elevator's
      *                direction state!
+     * @param jump    indicates an overflow happened in loading, and thus not clearing
+     *                the command
      */
-    public synchronized void removeCurCommand(int floor, int dirFlag) {
+    public synchronized void removeCurCommand(int floor, int dirFlag, boolean jump) {
         HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();
         CommandTableEntry entry;
@@ -225,7 +228,7 @@ public class CommandList {
             entry = iterator.next();
             switch (entry.getDirection()) {
                 case END:  // simply delete an END entry, has nothing to do with dirFlag!
-                    iterator.remove();
+                    iterator.remove(); // jump flag won't affect unloading
                     break;
                 // for a non-END entry, only process it when of the same direction
                 case UP:
@@ -235,7 +238,12 @@ public class CommandList {
                                 entry.getNextDestination(),
                                 new CommandTableEntry(CommandTableEntry.Direction.END, 0)
                         );
-                        iterator.remove();
+                        if (!jump) {
+                            iterator.remove();
+                            // if overloaded(on the specific direction), at least one command
+                            // still exist, so we can clear the loaded commands later together
+                            // with the ones not loaded yet when the elevator comes again.
+                        }
                     }
                     break;
                 case DOWN:
@@ -245,7 +253,9 @@ public class CommandList {
                                 entry.getNextDestination(),
                                 new CommandTableEntry(CommandTableEntry.Direction.END, 0)
                         );
-                        iterator.remove();
+                        if (!jump) {
+                            iterator.remove();
+                        }
                     }
                     break;
                 default:
