@@ -28,7 +28,8 @@ public class ElevatorThread extends Thread {
                 Debugger.dbgPrintln(
                         String.format(
                                 "@Thread{ElevatorThread,eid=%d,dir=%s,cur_flr=%d,load=%d}: running",
-                                eid, elevator.getDirection(), elevator.getFloor(), elevator.getLoad()
+                                eid, elevator.getDirection(), elevator.getFloor(),
+                                elevator.getLoad()
                         ), "elevator thread"
                 );
                 // exiting condition: finish all commands
