@@ -1,4 +1,4 @@
-import com.oocourse.elevator1.PersonRequest;
+import com.oocourse.elevator2.PersonRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +26,13 @@ public class FloorRequestTable {
         for (int i = 0; i < maxFloor - minFloor + 1; i++) {
             table.add(new HashSet<>());
         }
+    }
+
+    public synchronized void reset() {
+        for (HashSet<PersonRequest> hashSet : table) {
+            hashSet.clear();
+        }
+        notifyAll();
     }
 
     /**

@@ -1,4 +1,6 @@
-import com.oocourse.elevator1.PersonRequest;
+import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator2.Request;
+import com.oocourse.elevator2.ResetRequest;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -7,27 +9,15 @@ import java.util.Iterator;
 public class Elevator {
     private final CommandList commandList;  // list of commands waiting to be executed
     private final HashSet<PersonRequest> passengers;
-    private final int maxSpace = 6;
-    // a table of request scheduled to be handled by the current elevator
     private final FloorRequestTable floorRequestTable;  // the fr_table
+    private int maxSpace = 6;
+    // a table of request scheduled to be handled by the current elevator
     private int floor;  // current floor
     private final int minFloor = 1;
     private final int maxFloor = 11;
 
-    public synchronized boolean isFull() {
-        boolean ret = passengers.size() == maxSpace;
-        notifyAll();
-        return ret;
-    }
-
-    public synchronized int getLoad() {
-        int ret = passengers.size();
-        notifyAll();
-        return ret;
-    }
-
     public enum State {
-        MOVING, OPENING, CLOSING
+        MOVING, OPENING, CLOSING, RESETTING
     }
 
     private State state;  // the processing state of the current command
@@ -47,6 +37,15 @@ public class Elevator {
         floorRequestTable = new FloorRequestTable(minFloor, maxFloor);
     }
 
+    public synchronized void reset(Command command) {
+        this.state = State.MOVING;
+        this.direction = Direction.STAY;
+        this.maxSpace = command.getResetLoad();
+        this.commandList.reset();
+        this.floorRequestTable.reset();
+        notifyAll();
+    }
+
     /**
      * <p>
      *     This method is called in the ServerThread.schedule(). When
@@ -55,11 +54,17 @@ public class Elevator {
      *     can always keep its commandList refreshed just in time.
      * </p>
      */
-    public synchronized void addRequest(PersonRequest request) {
-        // modify the fr_table
-        floorRequestTable.addRequest(request);
-        // modify the command list table
-        commandList.addEntry(request);  // this will write a U/D entry to the table
+    public synchronized void addRequest(Request inputRequest) {
+        if (inputRequest instanceof PersonRequest) {
+            PersonRequest request = (PersonRequest) inputRequest;
+            // modify the fr_table
+            floorRequestTable.addRequest(request);
+            // modify the command list table
+            commandList.addEntry(request);  // this will write a U/D entry to the table
+        } else if (inputRequest instanceof ResetRequest) {
+            ResetRequest request = (ResetRequest) inputRequest;
+            commandList.addReset(request.getCapacity(), request.getSpeed());
+        }
         notifyAll();
     }
 
@@ -77,7 +82,7 @@ public class Elevator {
     public synchronized int nextDirection() {
         // ret = false if direction is STAY
         boolean ret = commandList.hasEntryInDirection(floor, direction);
-        Debugger.dbgPrintln("- hasEntryInDir=" + ret);
+        Debugger.dbgPrintln("- hasEntryInDir=" + ret, "elevator");
         notifyAll();
         switch (direction) {
             case UP:
@@ -85,11 +90,11 @@ public class Elevator {
             case DOWN:
                 return ret ? -1 : 1;
             default: // STAY
-                Debugger.dbgPrintln("STAY:");
+                Debugger.dbgPrintln("STAY:", "elevator");
                 boolean upward = commandList.hasEntryInDirection(floor, Direction.UP);
                 boolean downward = commandList.hasEntryInDirection(floor, Direction.DOWN);
-                Debugger.dbgPrintln("\thasEntryInDir Up=" + upward);
-                Debugger.dbgPrintln("\thasEntryInDir Dw=" + downward);
+                Debugger.dbgPrintln("\thasEntryInDir Up=" + upward, "elevator");
+                Debugger.dbgPrintln("\thasEntryInDir Dw=" + downward, "elevator");
                 if (upward) { // upward is of higher priority
                     return 1;
                 } else if (downward) {
@@ -116,8 +121,8 @@ public class Elevator {
             return null;  // command might have ended, loop and try again
         }
         Command ret = commandList.nextCommand(floor, direction, jumpCurrent);
-        Debugger.dbgPrintln(ret);  // debug print the command get
-        Debugger.dbgPrintln(commandList);
+        Debugger.dbgPrintln(ret, "command");  // debug print the command get
+        Debugger.dbgPrintln(commandList, "commandlist");
         notifyAll();
         return ret;
     }
@@ -177,6 +182,41 @@ public class Elevator {
             }
         }
         notifyAll();
+    }
+
+    public synchronized boolean isFull() {
+        boolean ret = passengers.size() == maxSpace;
+        notifyAll();
+        return ret;
+    }
+
+    public synchronized int getLoad() {
+        int ret = passengers.size();
+        notifyAll();
+        return ret;
+    }
+
+    public synchronized HashSet<PersonRequest> forceUnloadAll(int eid) {
+        HashSet<PersonRequest> unloaded = new HashSet<>();
+        for (PersonRequest personRequest : passengers) {
+            // force unloading the passenger
+            Debugger.timePrintln(
+                    String.format(
+                            "OUT-%d-%d-%d",
+                            personRequest.getPersonId(), floor, eid
+                    )
+            );
+            // create new request from the unfinished origin request
+            PersonRequest newRequest = new PersonRequest(
+                    floor,
+                    personRequest.getToFloor(),
+                    personRequest.getPersonId()
+            );
+            unloaded.add(newRequest);
+        }
+        passengers.clear();
+        notifyAll();
+        return unloaded;
     }
 
     public synchronized State getState() {

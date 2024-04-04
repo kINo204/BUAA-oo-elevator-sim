@@ -1,10 +1,10 @@
-import com.oocourse.elevator1.PersonRequest;
+import com.oocourse.elevator2.Request;
 
 import java.util.ArrayList;
 
 // thread safe
 public class RequestQueue {
-    private final ArrayList<PersonRequest> requests;
+    private final ArrayList<Request> requests;
     private boolean isEnd;
 
     public RequestQueue() {
@@ -12,12 +12,12 @@ public class RequestQueue {
         this.isEnd = false;
     }
 
-    public synchronized void addRequest(PersonRequest request) {
+    public synchronized void addRequest(Request request) {
         requests.add(request);
         notifyAll();
     }
 
-    public synchronized PersonRequest getRequest() {
+    public synchronized Request getRequest() {
         if (requests.isEmpty()) {
             try {
                 wait();
@@ -28,7 +28,7 @@ public class RequestQueue {
         if (requests.isEmpty()) {
             return null;
         }
-        PersonRequest request = requests.get(0);
+        Request request = requests.get(0);
         requests.remove(0);
         notifyAll();
         return request;

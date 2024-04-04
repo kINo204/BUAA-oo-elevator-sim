@@ -1,6 +1,7 @@
-import com.oocourse.elevator1.ElevatorInput;
-import com.oocourse.elevator1.PersonRequest;
-import com.oocourse.elevator1.TimableOutput;
+import com.oocourse.elevator2.ElevatorInput;
+import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator2.Request;
+import com.oocourse.elevator2.TimableOutput;
 
 import java.io.IOException;
 
@@ -25,7 +26,7 @@ public class Main {
         // Reading requests from STDIN.
         ElevatorInput elevatorInput = new ElevatorInput(System.in);
         while (true) {
-            Debugger.dbgPrintln("@Thread{Main.readRequests}: running");
+            Debugger.dbgPrintln("@Thread{Main.readRequests}: running", "read requests");
             // try to get a new request
             /* NOTE: THESE FORMATS ARE SPECIALIZED IN HW5
               Structure of a request:
@@ -40,10 +41,10 @@ public class Main {
               - int hashCode();
               - boolean equals(Object obj);
              */
-            PersonRequest request = elevatorInput.nextPersonRequest();
+            Request request = elevatorInput.nextRequest(); // TODO reset req
             if (request == null) {  // failed - no more new request from STDIN
                 requestQueue.setEnd(true);
-                Debugger.dbgPrintln("@Thread{Main.readRequests}: exiting");
+                Debugger.dbgPrintln("@Thread{Main.readRequests}: exiting", "read requests");
                 break;
             } else {  // succeeded
                 requestQueue.addRequest(request);

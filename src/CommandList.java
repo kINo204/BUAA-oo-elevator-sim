@@ -1,4 +1,4 @@
-import com.oocourse.elevator1.PersonRequest;
+import com.oocourse.elevator2.PersonRequest;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +26,9 @@ public class CommandList {
      * @see CommandTableEntry
      */
     private final ArrayList<HashSet<CommandTableEntry>> commandTable;
+    private boolean reset = false;
+    private int resetLoad;
+    private int resetSpeed;
     private final int minFloor;
     private final int maxFloor;
     private boolean end;
@@ -40,6 +43,14 @@ public class CommandList {
         end = false;
     }
 
+    public synchronized void reset() {
+        for (HashSet<CommandTableEntry> hashSet : commandTable) {
+            hashSet.clear();
+        }
+        reset = false;
+        notifyAll();
+    }
+
     /**
      * Walk through the command table and figure out the next command.
      * @param floor         the current floor of the elevator
@@ -50,6 +61,7 @@ public class CommandList {
      */
     public synchronized Command nextCommand(
             int floor, Elevator.Direction direction, boolean jumpCurrent) {
+        if (reset) { return new Command(true, resetLoad, resetSpeed); }
         //    Algorithm
         //        newCommand:(dst, 0)
         //        set the dst to the floor of the first found item below:
@@ -193,6 +205,7 @@ public class CommandList {
                 break;
             }
         }
+        ret &= !reset;
         notifyAll();
         return ret;
     }
@@ -314,5 +327,12 @@ public class CommandList {
         sb.append("}");
         notifyAll();
         return sb.toString();
+    }
+
+    public synchronized void addReset(int capacity, double speed) {
+        this.reset = true;
+        this.resetLoad = capacity;
+        this.resetSpeed = (int) (speed * 1000);
+        notifyAll();
     }
 }
