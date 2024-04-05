@@ -1,4 +1,5 @@
 import com.oocourse.elevator2.PersonRequest;
+import tools.Debugger;
 
 public class BufferThread extends Thread {
     private boolean start = false;

@@ -1,6 +1,7 @@
 import com.oocourse.elevator2.PersonRequest;
 import com.oocourse.elevator2.Request;
 import com.oocourse.elevator2.ResetRequest;
+import tools.Debugger;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -272,5 +273,10 @@ public class Elevator {
             default:
         }
         notifyAll();
+    }
+
+    public synchronized boolean isFeedbackRequestEnd() {
+        notifyAll();
+        return !commandList.isReset();
     }
 }

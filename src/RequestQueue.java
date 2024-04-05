@@ -48,4 +48,8 @@ public class RequestQueue {
         notifyAll();
         return requests.isEmpty();
     }
+
+    public synchronized void note() {
+        notifyAll();
+    }
 }

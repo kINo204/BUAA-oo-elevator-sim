@@ -335,4 +335,9 @@ public class CommandList {
         this.resetSpeed = (int) (speed * 1000);
         notifyAll();
     }
+
+    public synchronized boolean isReset() {
+        notifyAll();
+        return reset;
+    }
 }

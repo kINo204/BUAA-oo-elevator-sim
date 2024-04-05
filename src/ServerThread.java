@@ -1,6 +1,7 @@
 import com.oocourse.elevator2.PersonRequest;
 import com.oocourse.elevator2.Request;
 import com.oocourse.elevator2.ResetRequest;
+import tools.Debugger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -47,7 +48,7 @@ public class ServerThread extends Thread {
             // Exiting condition. EMPTY means no requests left, and END means no more new requests.
             if (
                     requestQueue.isEmpty() && requestQueue.isEnd()
-                    && bufferQueue.isEmpty()
+                    && bufferQueue.isEmpty() && elevatorsFeedbackRequestEnd()
             ) {
                 Debugger.dbgPrintln(
                         "@Thread{ServerThread}: exiting", "server"
@@ -56,6 +57,7 @@ public class ServerThread extends Thread {
                     elevator.setEnd();
                 }
                 bufferQueue.setEnd(true);
+                bufferThread.setStart(false);
                 return;
             }
 
@@ -69,8 +71,21 @@ public class ServerThread extends Thread {
         }
     }
 
+    private boolean elevatorsFeedbackRequestEnd() {
+        boolean ret = true;
+        for (Elevator elevator : elevators) {
+            ret &= elevator.isFeedbackRequestEnd();
+            Debugger.dbgPrintln(
+                    "@Thread{ServerThread}: ele_end=" + elevator.isFeedbackRequestEnd(),
+                    "server"
+            );
+        }
+        return ret;
+    }
+
     public void noteElevatorDirectionChange() {
         bufferThread.setStart(true);
+        requestQueue.note();
     }
 
     private void schedule(Request inputRequest) {
