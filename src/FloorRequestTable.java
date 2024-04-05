@@ -28,11 +28,16 @@ public class FloorRequestTable {
         }
     }
 
-    public synchronized void reset() {
+    public synchronized HashSet<PersonRequest> reset() {
+        HashSet<PersonRequest> unfinishedReq = new HashSet<>();
+        for (HashSet<PersonRequest> hashSet : table) {
+            unfinishedReq.addAll(hashSet);
+        }
         for (HashSet<PersonRequest> hashSet : table) {
             hashSet.clear();
         }
         notifyAll();
+        return unfinishedReq;
     }
 
     /**

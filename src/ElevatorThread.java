@@ -105,7 +105,7 @@ public class ElevatorThread extends Thread {
         );
         sleep(resetTime);
         this.moveTime = command.getResetSpeed();
-        elevator.reset(command);
+        server.addRequests(elevator.reset(command));
         Debugger.timePrintln(
                 String.format("RESET_END-%d", eid)
         );

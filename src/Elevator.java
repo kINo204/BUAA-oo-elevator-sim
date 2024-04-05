@@ -38,13 +38,13 @@ public class Elevator {
         floorRequestTable = new FloorRequestTable(minFloor, maxFloor);
     }
 
-    public synchronized void reset(Command command) {
+    public synchronized HashSet<PersonRequest> reset(Command command) {
         this.state = State.MOVING;
         this.direction = Direction.STAY;
         this.maxSpace = command.getResetLoad();
         this.commandList.reset();
-        this.floorRequestTable.reset();
         notifyAll();
+        return this.floorRequestTable.reset();
     }
 
     /**
