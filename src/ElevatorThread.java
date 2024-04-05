@@ -109,6 +109,8 @@ public class ElevatorThread extends Thread {
         Debugger.timePrintln(
                 String.format("RESET_END-%d", eid)
         );
+        // set state to MOVING and note the server
+        elevator.setState(Elevator.State.MOVING);
         server.noteElevatorDirectionChange();
     }
 
@@ -146,6 +148,9 @@ public class ElevatorThread extends Thread {
             // if the elevator is full and only loading required on this floor,
             // jump the command once
             if (elevator.isFull() && !elevator.needUnloading()) {
+                if (elevator.nextCommand(false).isReset()) {
+                    return;
+                }
                 jump = true; // jump the command once
             } else {
                 elevator.setState(Elevator.State.OPENING);          // open the door next

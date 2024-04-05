@@ -39,7 +39,9 @@ public class Elevator {
     }
 
     public synchronized HashSet<PersonRequest> reset(Command command) {
-        this.state = State.MOVING;
+        // State is not set here as it'll affect scheduling process,
+        // and thus put at the end of ElevatorThread::motionReset(),
+        // after output "RESET_END".
         this.direction = Direction.STAY;
         this.maxSpace = command.getResetLoad();
         this.commandList.reset();
