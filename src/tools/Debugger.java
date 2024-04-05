@@ -5,7 +5,7 @@ import com.oocourse.elevator2.TimableOutput;
 import java.util.HashMap;
 
 public class Debugger {
-    private static final boolean debugOut = true;
+    private static final boolean debugOut = false;
     private static final HashMap<String, Boolean> infoSwitch = new HashMap<>();
 
     static {
