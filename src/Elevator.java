@@ -120,7 +120,7 @@ public class Elevator {
      */
     public synchronized Command nextCommand(boolean jumpCurrent) throws InterruptedException {
         if (commandList.isEmpty()) {
-            wait();  // command not ended, but no new commands yet
+            wait(100);  // command not ended, but no new commands yet
         }
         if (commandList.isEmpty()) {
             return null;  // command might have ended, loop and try again
