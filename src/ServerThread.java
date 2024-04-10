@@ -88,11 +88,30 @@ public class ServerThread extends Thread {
         requestQueue.note();
     }
 
+    private int schedulePriority(Elevator elevator, PersonRequest request) {
+        int priority = 0;
+        // highest: idle
+        if (elevator.getDirection() == Elevator.Direction.STAY) {
+            return priority;
+        }
+        // moving towards:
+        // 1st: not full
+        if (elevator.isFull()) { return 9999; }
+        // 2nd: shorter distance
+        priority += 100 * Math.abs(request.getFromFloor() - elevator.getFloor());
+        // 3nd: less load
+        priority += 10 * elevator.getLoad();
+        // 4th: random of [0,10)
+        priority += (int) (Math.random() * 10);
+
+        return priority;
+    }
+
     private void schedule(Request inputRequest) {
         if (inputRequest instanceof PersonRequest) {
             PersonRequest request = (PersonRequest) inputRequest;
             // look in (towards + idle) for an elevator of shortest distance
-            int minDistance = 100000;
+            int minPriority = 100000;
             int selectedElevatorId = 0;  // from 1 to 6
             for (Elevator elevator : elevators) {
                 // elevator under reset, not operable
@@ -108,15 +127,16 @@ public class ServerThread extends Thread {
                         && elevator.getFloor() > request.getFromFloor()
                         && elevator.nextDirection() == 1;
                 if (jump) { continue; }
-                // measure distance and record
-                int distance = Math.abs(request.getFromFloor() - elevator.getFloor());
+                // measure priority and record
+                // smaller value of priority means higher priority level!!!
+                int priority = schedulePriority(elevator, request);
                 // "<"(instead of <=) means if multiple found, take the 1st
-                if (distance < minDistance) {
-                    minDistance = distance;
+                if (priority < minPriority) {
+                    minPriority = priority;
                     selectedElevatorId = elevators.indexOf(elevator) + 1;
                 }
             }
-            if (minDistance != 100000) {
+            if (minPriority != 100000) {
                 // elevator found, start scheduling
                 Elevator elevator = elevators.get(selectedElevatorId - 1);// EID starts at 1, so -1
                 Debugger.timePrintln(
