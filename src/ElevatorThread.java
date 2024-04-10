@@ -31,7 +31,7 @@ public class ElevatorThread extends Thread {
                                 "@Thread{ElevatorThread,eid=%d,dir=%s,cur_flr=%d,load=%d}: running",
                                 eid, elevator.getDirection(), elevator.getFloor(),
                                 elevator.getLoad()
-                        ), "elevator thread"
+                        ), "elevator thread", eid
                 );
                 // exiting condition: finish all commands
                 if (elevator.isCommandEmpty() && elevator.isCommandEnd()) {
@@ -39,7 +39,7 @@ public class ElevatorThread extends Thread {
                             String.format(
                                     "@Thread{ElevatorThread,eid=%d}: exiting",
                                     eid
-                            ), "elevator thread"
+                            ), "elevator thread", eid
                     );
                     return;
                 }
@@ -57,7 +57,7 @@ public class ElevatorThread extends Thread {
                                 String.format(
                                         "@Thread{ElevatorThread,eid=%d}: enter opening",
                                         eid
-                                ), "elevator thread"
+                                ), "elevator thread", eid
                         );
                         motionOpening();
                         break;
@@ -66,7 +66,7 @@ public class ElevatorThread extends Thread {
                                 String.format(
                                         "@Thread{ElevatorThread,eid=%d}: enter closing",
                                         eid
-                                ), "elevator thread"
+                                ), "elevator thread", eid
                         );
                         motionClosing();
                         break;
@@ -75,7 +75,7 @@ public class ElevatorThread extends Thread {
                                 String.format(
                                         "@Thread{ElevatorThread,eid=%d}: enter resetting",
                                         eid
-                                ), "elevator thread"
+                                ), "elevator thread", eid
                         );
                         motionReset();
                         break;
@@ -92,7 +92,7 @@ public class ElevatorThread extends Thread {
                     String.format("OPEN-%d-%d", elevator.getFloor(), eid)
             );
             sleep(openTime);
-            HashSet<PersonRequest> unloaded = elevator.forceUnloadAll(eid);
+            HashSet<PersonRequest> unloaded = elevator.forceUnloadAll();
             server.addRequests(unloaded);
             sleep(closeTime);
             Debugger.timePrintln(
@@ -119,7 +119,7 @@ public class ElevatorThread extends Thread {
                 String.format(
                         "@Thread{ElevatorThread,eid=%d}: enter moving=%s",
                         eid, elevator.getDirection()
-                ), "elevator thread"
+                ), "elevator thread", eid
         );
         // resetting entry
         if (command.isReset()) {
@@ -172,7 +172,7 @@ public class ElevatorThread extends Thread {
         sleep(closeTime);
         // calc next direction
         int dirFlag = elevator.nextDirection();
-        Debugger.dbgPrintln("dir_load_rem=" + dirFlag, "elevator thread");
+        Debugger.dbgPrintln("dir_load_rem=" + dirFlag, "elevator thread", eid);
         switch (elevator.getDirection()) {
             case UP:
                 if (dirFlag != 1) {
@@ -191,10 +191,10 @@ public class ElevatorThread extends Thread {
                 break;
         }
         // unloading
-        elevator.unloadPassengers(eid);
+        elevator.unloadPassengers();
         // loading
-        jump = elevator.loadPassengers(dirFlag, eid);
-        Debugger.dbgPrintln("set jump=" + jump, "elevator thread");
+        jump = elevator.loadPassengers(dirFlag);
+        Debugger.dbgPrintln("set jump=" + jump, "elevator thread", eid);
         elevator.removeCurCommand(dirFlag, jump);  // the current command finished, remove it
         // finished closing the door
         Debugger.timePrintln(

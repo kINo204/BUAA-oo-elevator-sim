@@ -11,6 +11,7 @@ public class Elevator {
     private final CommandList commandList;  // list of commands waiting to be executed
     private final HashSet<PersonRequest> passengers;
     private final FloorRequestTable floorRequestTable;  // the fr_table
+    private final int eid;
     private int maxSpace = 6;
     // a table of request scheduled to be handled by the current elevator
     private int floor;  // current floor
@@ -29,7 +30,8 @@ public class Elevator {
 
     private Direction direction;
 
-    Elevator() {
+    Elevator(int eid) {
+        this.eid = eid;
         floor = 1;
         state = State.MOVING;
         direction = Direction.STAY;
@@ -85,7 +87,7 @@ public class Elevator {
     public synchronized int nextDirection() {
         // ret = false if direction is STAY
         boolean ret = commandList.hasEntryInDirection(floor, direction);
-        Debugger.dbgPrintln("- hasEntryInDir=" + ret, "elevator");
+        Debugger.dbgPrintln("- hasEntryInDir=" + ret, "elevator", eid);
         notifyAll();
         switch (direction) {
             case UP:
@@ -96,8 +98,8 @@ public class Elevator {
                 Debugger.dbgPrintln("STAY:", "elevator");
                 boolean upward = commandList.hasEntryInDirection(floor, Direction.UP);
                 boolean downward = commandList.hasEntryInDirection(floor, Direction.DOWN);
-                Debugger.dbgPrintln("\thasEntryInDir Up=" + upward, "elevator");
-                Debugger.dbgPrintln("\thasEntryInDir Dw=" + downward, "elevator");
+                Debugger.dbgPrintln("\thasEntryInDir Up=" + upward, "elevator", eid);
+                Debugger.dbgPrintln("\thasEntryInDir Dw=" + downward, "elevator", eid);
                 if (upward) { // upward is of higher priority
                     return 1;
                 } else if (downward) {
@@ -124,18 +126,18 @@ public class Elevator {
             return null;  // command might have ended, loop and try again
         }
         Command ret = commandList.nextCommand(floor, direction, jumpCurrent);
-        Debugger.dbgPrintln(ret, "command");  // debug print the command get
-        Debugger.dbgPrintln(commandList, "commandlist");
+        Debugger.dbgPrintln(ret, "command", eid);  // debug print the command get
+        Debugger.dbgPrintln(commandList, "commandlist", eid);
         notifyAll();
         return ret;
     }
 
     public synchronized void removeCurCommand(int dirFlag, boolean jump) {
-        commandList.removeCurCommand(floor, dirFlag, jump);
+        commandList.removeCurCommand(floor, dirFlag, jump, passengers);
         notifyAll();
     }
 
-    public synchronized boolean loadPassengers(int dirFlag, int eid) {
+    public synchronized boolean loadPassengers(int dirFlag) {
         // calculate space left on elevator
         int restSpace = maxSpace - passengers.size();
         if (restSpace == 0) {
@@ -169,7 +171,7 @@ public class Elevator {
         return false;
     }
 
-    public synchronized void unloadPassengers(int eid) {
+    public synchronized void unloadPassengers() {
         Iterator<PersonRequest> iterator = passengers.iterator();
         PersonRequest personRequest;
         while (iterator.hasNext()) {
@@ -199,7 +201,7 @@ public class Elevator {
         return ret;
     }
 
-    public synchronized HashSet<PersonRequest> forceUnloadAll(int eid) {
+    public synchronized HashSet<PersonRequest> forceUnloadAll() {
         HashSet<PersonRequest> unloaded = new HashSet<>();
         for (PersonRequest personRequest : passengers) {
             // force unloading the passenger

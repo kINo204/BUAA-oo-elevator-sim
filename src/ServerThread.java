@@ -23,7 +23,7 @@ public class ServerThread extends Thread {
         elevators = new ArrayList<>();
         elevatorThreads = new ArrayList<>();
         for (int i = 0; i < elevatorNum; i++) {
-            Elevator elevator = new Elevator();
+            Elevator elevator = new Elevator(i + 1);
             elevators.add(elevator);
             ElevatorThread elevatorThread = new ElevatorThread(this, elevator, i + 1);
             elevatorThreads.add(elevatorThread);

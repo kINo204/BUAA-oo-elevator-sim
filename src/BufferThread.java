@@ -42,7 +42,7 @@ public class BufferThread extends Thread {
 
     public synchronized void addRequest(PersonRequest request) {
         bufferQueue.addRequest(request);
-        Debugger.dbgPrintln("@BufferThread: buffed req");
+        Debugger.dbgPrintln("@BufferThread: buffed req", "buffer thread");
         notifyAll();
     }
 }

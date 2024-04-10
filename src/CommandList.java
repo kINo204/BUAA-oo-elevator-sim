@@ -233,7 +233,8 @@ public class CommandList {
      * @param jump    indicates an overflow happened in loading, and thus not clearing
      *                the command
      */
-    public synchronized void removeCurCommand(int floor, int dirFlag, boolean jump) {
+    public synchronized void removeCurCommand(int floor, int dirFlag, boolean jump,
+                                              HashSet<PersonRequest> passengers) {
         HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();
         CommandTableEntry entry;
@@ -247,10 +248,21 @@ public class CommandList {
                 case UP:
                     // create a new entry of END, and remove
                     if (dirFlag != -1) {
-                        addEntry(
-                                entry.getNextDestination(),
-                                new CommandTableEntry(CommandTableEntry.Direction.END, 0)
-                        );
+                        boolean createEndEntry = false;
+                        // search in passengers for any whose destination is identical
+                        // to the entry's
+                        for (PersonRequest passenger : passengers) {
+                            if (passenger.getToFloor() == entry.getNextDestination()) {
+                                createEndEntry = true;
+                                break;
+                            }
+                        }
+                        if (createEndEntry) {
+                            addEntry(
+                                    entry.getNextDestination(),
+                                    new CommandTableEntry(CommandTableEntry.Direction.END, 0)
+                            );
+                        }
                         if (!jump) {
                             iterator.remove();
                             // if overloaded(on the specific direction), at least one command
@@ -262,10 +274,21 @@ public class CommandList {
                 case DOWN:
                     // same as UP
                     if (dirFlag != 1) {
-                        addEntry(
-                                entry.getNextDestination(),
-                                new CommandTableEntry(CommandTableEntry.Direction.END, 0)
-                        );
+                        boolean createEndEntry = false;
+                        // search in passengers for any whose destination is identical
+                        // to the entry's
+                        for (PersonRequest passenger : passengers) {
+                            if (passenger.getToFloor() == entry.getNextDestination()) {
+                                createEndEntry = true;
+                                break;
+                            }
+                        }
+                        if (createEndEntry) {
+                            addEntry(
+                                    entry.getNextDestination(),
+                                    new CommandTableEntry(CommandTableEntry.Direction.END, 0)
+                            );
+                        }
                         if (!jump) {
                             iterator.remove();
                         }
