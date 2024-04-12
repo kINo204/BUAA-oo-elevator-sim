@@ -1,22 +1,49 @@
-import com.oocourse.elevator2.PersonRequest;
-import com.oocourse.elevator2.Request;
-import com.oocourse.elevator2.ResetRequest;
+import com.oocourse.elevator3.DoubleCarResetRequest;
+import com.oocourse.elevator3.NormalResetRequest;
+import com.oocourse.elevator3.PersonRequest;
+import com.oocourse.elevator3.Request;
 import tools.Debugger;
 
 import java.util.HashSet;
 import java.util.Iterator;
 
-// TODO not thread safe
+//  thread safe
 public class Elevator {
     private final CommandList commandList;  // list of commands waiting to be executed
     private final HashSet<PersonRequest> passengers;
     private final FloorRequestTable floorRequestTable;  // the fr_table
-    private final int eid;
+    private String eid;
     private int maxSpace = 6;
     // a table of request scheduled to be handled by the current elevator
     private int floor;  // current floor
-    private final int minFloor = 1;
-    private final int maxFloor = 11;
+    private int minFloor = 1;
+    private int maxFloor = 11;
+    private int transFloor;
+
+    public synchronized boolean containRange(PersonRequest request) {
+        notifyAll();
+        return
+                request.getFromFloor() >= minFloor && request.getFromFloor() <= maxFloor
+                && request.getToFloor() >= minFloor && request.getToFloor() <= maxFloor;
+    }
+
+    public synchronized int fitRange(PersonRequest request) {
+        assert (containRange(request));
+        return maxFloor - minFloor - Math.abs(request.getToFloor() - request.getFromFloor());
+    }
+
+    public synchronized void setEid(String s) {
+        eid = s;
+    }
+
+    public synchronized String getEid() {
+        return eid;
+    }
+
+    public synchronized void setFloor(int i) {
+        floor = i;
+        notifyAll();
+    }
 
     public enum State {
         MOVING, OPENING, CLOSING, RESETTING
@@ -30,11 +57,32 @@ public class Elevator {
 
     private Direction direction;
 
-    Elevator(int eid) {
+    Elevator(String eid) {
         this.eid = eid;
         floor = 1;
+        transFloor = 0;
         state = State.MOVING;
         direction = Direction.STAY;
+        commandList = new CommandList(minFloor, maxFloor);
+        passengers = new HashSet<>();
+        floorRequestTable = new FloorRequestTable(minFloor, maxFloor);
+    }
+
+    Elevator(String eid, int minFloor, int maxFloor, int transFloor, Command command) {
+        this.eid = eid;
+        state = State.MOVING;
+        direction = Direction.STAY;
+        this.maxSpace = command.getResetLoad();
+        // set initial floor
+        this.minFloor = minFloor;
+        this.maxFloor = maxFloor;
+        this.transFloor = transFloor;
+        assert (minFloor == transFloor || maxFloor == transFloor);
+        if (minFloor == transFloor) {
+            floor = transFloor + 1;
+        } else {
+            floor = transFloor - 1;
+        }
         commandList = new CommandList(minFloor, maxFloor);
         passengers = new HashSet<>();
         floorRequestTable = new FloorRequestTable(minFloor, maxFloor);
@@ -66,9 +114,14 @@ public class Elevator {
             floorRequestTable.addRequest(request);
             // modify the command list table
             commandList.addEntry(request);  // this will write a U/D entry to the table
-        } else if (inputRequest instanceof ResetRequest) {
-            ResetRequest request = (ResetRequest) inputRequest;
-            commandList.addReset(request.getCapacity(), request.getSpeed());
+        } else if (inputRequest instanceof NormalResetRequest) {
+            NormalResetRequest request = (NormalResetRequest) inputRequest;
+            commandList.addReset(request.getCapacity(), request.getSpeed(),
+                    0);
+        } else if (inputRequest instanceof DoubleCarResetRequest) {
+            DoubleCarResetRequest request = (DoubleCarResetRequest) inputRequest;
+            commandList.addReset(request.getCapacity(), request.getSpeed(),
+                    request.getTransferFloor());
         }
         notifyAll();
     }
@@ -85,6 +138,11 @@ public class Elevator {
      * @return the next direction for the elevator
      */
     public synchronized int nextDirection() {
+        if (commandList.isEmpty() && floor == transFloor) {
+            return minFloor == transFloor ? 1 : -1;
+        } else if (commandList.isEmpty()) {
+            return 0; // TODO ?? can this work right
+        }
         // ret = false if direction is STAY
         boolean ret = commandList.hasEntryInDirection(floor, direction);
         Debugger.dbgPrintln("- hasEntryInDir=" + ret, "elevator", eid);
@@ -105,12 +163,10 @@ public class Elevator {
                 } else if (downward) {
                     return -1;
                 } else {
-                    return 1; // todo
+                    return 1;
                 }
         }
     }
-
-    // TODO should we clone a command?
 
     /**
      * If the command list is not empty, ask it for a next command.
@@ -119,8 +175,13 @@ public class Elevator {
      * @throws InterruptedException if the current thread is interrupted in waiting
      */
     public synchronized Command nextCommand(boolean jumpCurrent) throws InterruptedException {
+        // CHECKME for DCE: if IDLE at transferring floor, move away one floor and continue
+        if (commandList.isEmpty() && floor == transFloor) {
+            return new Command(
+                    minFloor == transFloor ? transFloor + 1 : transFloor - 1, 0);
+        }
         if (commandList.isEmpty()) {
-            wait(100);  // command not ended, but no new commands yet
+            wait();  // command not ended, but no new commands yet
         }
         if (commandList.isEmpty()) {
             return null;  // command might have ended, loop and try again
@@ -152,7 +213,7 @@ public class Elevator {
         for (PersonRequest personRequest : loadedPassengers) {
             Debugger.timePrintln(
                     String.format(
-                            "IN-%d-%d-%d",
+                            "IN-%d-%d-%s",
                             personRequest.getPersonId(), floor, eid
                     )
             );
@@ -171,7 +232,7 @@ public class Elevator {
         return false;
     }
 
-    public synchronized void unloadPassengers() {
+    public synchronized void unloadPassengers(ServerThread server) {
         Iterator<PersonRequest> iterator = passengers.iterator();
         PersonRequest personRequest;
         while (iterator.hasNext()) {
@@ -179,10 +240,17 @@ public class Elevator {
             if (personRequest.getToFloor() == floor) {
                 Debugger.timePrintln(
                         String.format(
-                                "OUT-%d-%d-%d",
+                                "OUT-%d-%d-%s",
                                 personRequest.getPersonId(), floor, eid
                         )
                 );
+                // CHECKME for ParaRequest, send next request to Server now
+                if (personRequest instanceof ParaRequest) {
+                    HashSet<PersonRequest> hashSet = new HashSet<>();
+                    hashSet.add(((ParaRequest) personRequest).getNextRequest());
+                    server.addRequests(hashSet);
+                    Debugger.dbgPrintln("ParaRequest sent", "elevator");
+                }
                 iterator.remove();
             }
         }
@@ -207,7 +275,7 @@ public class Elevator {
             // force unloading the passenger
             Debugger.timePrintln(
                     String.format(
-                            "OUT-%d-%d-%d",
+                            "OUT-%d-%d-%s",
                             personRequest.getPersonId(), floor, eid
                     )
             );
@@ -249,6 +317,19 @@ public class Elevator {
         notifyAll();
     }
 
+    public synchronized int getTransFloor() {
+        notifyAll();
+        return transFloor;
+    }
+
+    public synchronized void setRange(int min, int max) {
+        minFloor = min;
+        maxFloor = max;
+        commandList.setRange(min, max);
+        floorRequestTable.setRange(min, max);
+        notifyAll();
+    }
+
     public synchronized boolean isCommandEmpty() {
         boolean ret = commandList.isEmpty();
         notifyAll();
@@ -281,6 +362,40 @@ public class Elevator {
 
     public synchronized boolean isFeedbackRequestEnd() {
         notifyAll();
-        return !commandList.isReset();
+        boolean ret = true;
+        for (PersonRequest personRequest : passengers) {
+            if (personRequest instanceof ParaRequest) {
+                ret = false;
+                break;
+            }
+        }
+        ret &= !floorRequestTable.hasParaReq();
+        return !commandList.isReset() && ret;
+    }
+
+    public synchronized boolean atFloor(int toCompare) {
+        notifyAll();
+        return toCompare == floor;
+    }
+
+    public synchronized int getMinFloor() {
+        notifyAll();
+        return minFloor;
+    }
+
+    public synchronized int getMaxFloor() {
+        notifyAll();
+        return maxFloor;
+    }
+
+    public synchronized void setTransFloor(int transFloor) {
+        this.transFloor = transFloor;
+        notifyAll();
+    }
+
+    public synchronized boolean isUpperDcElevator() {
+        assert transFloor != 0;
+        notifyAll();
+        return minFloor == transFloor;
     }
 }

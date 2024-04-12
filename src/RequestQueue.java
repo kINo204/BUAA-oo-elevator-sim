@@ -1,4 +1,4 @@
-import com.oocourse.elevator2.Request;
+import com.oocourse.elevator3.Request;
 
 import java.util.ArrayList;
 
@@ -22,7 +22,7 @@ public class RequestQueue {
             try {
                 wait();
             } catch (InterruptedException e) {
-                e.printStackTrace();  // TODO
+                e.printStackTrace();
             }
         }
         if (requests.isEmpty()) {

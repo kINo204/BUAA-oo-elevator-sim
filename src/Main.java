@@ -1,6 +1,6 @@
-import com.oocourse.elevator2.ElevatorInput;
-import com.oocourse.elevator2.Request;
-import com.oocourse.elevator2.TimableOutput;
+import com.oocourse.elevator3.ElevatorInput;
+import com.oocourse.elevator3.Request;
+import com.oocourse.elevator3.TimableOutput;
 import tools.Debugger;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class Main {
               - int hashCode();
               - boolean equals(Object obj);
              */
-            Request request = elevatorInput.nextRequest(); // TODO reset req
+            Request request = elevatorInput.nextRequest();
             if (request == null) {  // failed - no more new request from STDIN
                 requestQueue.setEnd(true);
                 Debugger.dbgPrintln("@Thread{Main.readRequests}: exiting", "read requests");

@@ -1,4 +1,4 @@
-import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator3.PersonRequest;
 import tools.Debugger;
 
 public class BufferThread extends Thread {

@@ -1,5 +1,8 @@
-import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator3.PersonRequest;
+import tools.Debugger;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -14,26 +17,26 @@ public class FloorRequestTable {
     /**
      * A table recording all requests' status, listed by there from-floor.
      */
-    private final ArrayList<HashSet<PersonRequest>> table;
-    private final int minFloor;
-    private final int maxFloor;
+    private final HashMap<Integer, HashSet<PersonRequest>> table;
+    private int minFloor;
+    private int maxFloor;
 
     FloorRequestTable(int minFloor, int maxFloor) {
         // initialize floor-request table
         this.minFloor = minFloor;
         this.maxFloor = maxFloor;
-        table = new ArrayList<>();
-        for (int i = 0; i < maxFloor - minFloor + 1; i++) {
-            table.add(new HashSet<>());
+        table = new HashMap<>();
+        for (int i = minFloor; i <= maxFloor; i++) {
+            table.put(i, new HashSet<>());
         }
     }
 
     public synchronized HashSet<PersonRequest> reset() {
         HashSet<PersonRequest> unfinishedReq = new HashSet<>();
-        for (HashSet<PersonRequest> hashSet : table) {
+        for (HashSet<PersonRequest> hashSet : table.values()) {
             unfinishedReq.addAll(hashSet);
         }
-        for (HashSet<PersonRequest> hashSet : table) {
+        for (HashSet<PersonRequest> hashSet : table.values()) {
             hashSet.clear();
         }
         notifyAll();
@@ -51,7 +54,7 @@ public class FloorRequestTable {
      */
     public synchronized int getFloorWaiterNum(int floor, int dirFlag) {
         int num = 0;
-        for (PersonRequest personRequest : table.get(floor - 1)) {
+        for (PersonRequest personRequest : table.get(floor)) {
             int dir = personRequest.getFromFloor() < personRequest.getToFloor() ?
                     1 : -1; // same floor not allowed
             if (dir == dirFlag) {
@@ -75,7 +78,7 @@ public class FloorRequestTable {
      */
     public synchronized HashSet<PersonRequest> getFloorWaiters(
             int floor, int dirFlag, int restSpace) {
-        HashSet<PersonRequest> ret = new HashSet<>(table.get(floor - 1));
+        HashSet<PersonRequest> ret = new HashSet<>(table.get(floor));
         HashSet<PersonRequest> toRemove = new HashSet<>();
         int num = 0;
         for (PersonRequest personRequest : ret) {
@@ -95,14 +98,39 @@ public class FloorRequestTable {
                 iterator.remove();
             }
         }
-        table.get(floor - 1).removeAll(toRemove); // loaded waiters deleted
+        table.get(floor).removeAll(toRemove); // loaded waiters deleted
         notifyAll();
         return ret;
     }
 
     public synchronized void addRequest(PersonRequest request) {
         // add the request to its from-floor
-        table.get(request.getFromFloor() - 1).add(request);
+        Debugger.dbgPrintln("fromflr=" + request.getFromFloor());
+        table.get(request.getFromFloor()).add(request);
+        notifyAll();
+    }
+
+    public synchronized boolean hasParaReq() {
+        for (HashSet<PersonRequest> hashSet : table.values()) {
+            for (PersonRequest personRequest : hashSet) {
+                if (personRequest instanceof ParaRequest) {
+                    notifyAll();
+                    return true;
+                }
+            }
+        }
+        notifyAll();
+        return false;
+    }
+
+    public synchronized void setRange(int min, int max) {
+        for (int i = minFloor; i <= maxFloor; i++) {
+            if (i < min || i > max) {
+                table.remove(i);
+            }
+        }
+        minFloor = min;
+        maxFloor = max;
         notifyAll();
     }
 }

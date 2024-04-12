@@ -1,6 +1,7 @@
-import com.oocourse.elevator2.PersonRequest;
+import com.oocourse.elevator3.PersonRequest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -25,26 +26,27 @@ public class CommandList {
      *
      * @see CommandTableEntry
      */
-    private final ArrayList<HashSet<CommandTableEntry>> commandTable;
+    private final HashMap<Integer, HashSet<CommandTableEntry>> commandTable;
     private boolean reset = false;
     private int resetLoad;
     private int resetSpeed;
-    private final int minFloor;
-    private final int maxFloor;
+    private int minFloor;
+    private int maxFloor;
     private boolean end;
+    private int resetTransFloor;
 
     CommandList(int minFloor, int maxFloor) {
         this.minFloor = minFloor;
         this.maxFloor = maxFloor;
-        commandTable = new ArrayList<>();
-        for (int i = 0; i < maxFloor - minFloor + 1; i++) {
-            commandTable.add(new HashSet<>());
+        commandTable = new HashMap<>();
+        for (int i = minFloor; i <= maxFloor; i++) {
+            commandTable.put(i, new HashSet<>());
         }
         end = false;
     }
 
     public synchronized void reset() {
-        for (HashSet<CommandTableEntry> hashSet : commandTable) {
+        for (HashSet<CommandTableEntry> hashSet : commandTable.values()) {
             hashSet.clear();
         }
         reset = false;
@@ -61,7 +63,7 @@ public class CommandList {
      */
     public synchronized Command nextCommand(
             int floor, Elevator.Direction direction, boolean jumpCurrent) {
-        if (reset) { return new Command(true, resetLoad, resetSpeed); }
+        if (reset) { return new Command(true, resetLoad, resetSpeed, resetTransFloor); }
         //    Algorithm
         //        newCommand:(dst, 0)
         //        set the dst to the floor of the first found item below:
@@ -72,7 +74,7 @@ public class CommandList {
         //                look for a U/D same as the current direction; or an E
         //                if unable, look for a U/D of different direction
         //            c. if nothing found, do not give a command
-        // TODO after a STAY command, the elevator always chooses to go up
+        // note: after a STAY command, the elevator always chooses to go up
         int la1;
         int la2;
         int lb;
@@ -145,13 +147,13 @@ public class CommandList {
         }
         int dirFlag = direction == Elevator.Direction.UP ? 1 : -1;
         // if there's an entry in the direction(cur floor excluded)
-        for (int i = floor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
-            if ((i != floor - 1) && (!commandTable.get(i).isEmpty())) {
+        for (int i = floor; i >= minFloor && i <= maxFloor; i += dirFlag) {
+            if ((i != floor) && (!commandTable.get(i).isEmpty())) {
                 return true;
             }
         }
         // if the current floor's entry could generate an END entry later
-        for (CommandTableEntry entry : commandTable.get(floor - 1)) {
+        for (CommandTableEntry entry : commandTable.get(floor)) {
             if (entry.getDirection() == CommandTableEntry.Direction.END) {
                 continue;  // END entry can't create a new entry
             }
@@ -171,16 +173,16 @@ public class CommandList {
     ) {
         int last = -1;
         assert dirFlag != 0;
-        for (int i = startFloor - 1; i >= 0 && i < maxFloor - minFloor + 1; i += dirFlag) {
+        for (int i = startFloor; i >= minFloor && i <= maxFloor; i += dirFlag) {
             for (CommandTableEntry entry : commandTable.get(i)) {
                 if (entry.getDirection() == targetDir) {
                     if (jumpCurrent) {
-                        if (i == startFloor - 1) {
+                        if (i == startFloor) {
                             continue;
                         }
                     }
                     // refresh `last`
-                    last = dirFlag * (i - startFloor + 1);
+                    last = dirFlag * (i - startFloor);
                     if (shortest) {
                         notifyAll();
                         return last;
@@ -199,7 +201,7 @@ public class CommandList {
 
     public synchronized boolean isEmpty() {
         boolean ret = true;
-        for (HashSet<CommandTableEntry> hashSet : commandTable) {
+        for (HashSet<CommandTableEntry> hashSet : commandTable.values()) {
             if (!hashSet.isEmpty()) {
                 ret = false;
                 break;
@@ -235,7 +237,7 @@ public class CommandList {
      */
     public synchronized void removeCurCommand(int floor, int dirFlag, boolean jump,
                                               HashSet<PersonRequest> passengers) {
-        HashSet<CommandTableEntry> hashSet = commandTable.get(floor - 1);
+        HashSet<CommandTableEntry> hashSet = commandTable.get(floor);
         Iterator<CommandTableEntry> iterator = hashSet.iterator();
         CommandTableEntry entry;
         while (iterator.hasNext()) {
@@ -310,7 +312,7 @@ public class CommandList {
     public synchronized void addEntry(int floor, CommandTableEntry cte) {
         // look for identical CTE in the from_floor
         boolean match = false;
-        for (CommandTableEntry entry : commandTable.get(floor - 1)) {
+        for (CommandTableEntry entry : commandTable.get(floor)) {
             if (entry.equals(cte)) {
                 match = true;
                 break;
@@ -318,7 +320,7 @@ public class CommandList {
         }
         // if there isn't any, add the new one to the from_floor
         if (!match) {
-            commandTable.get(floor - 1).add(cte);
+            commandTable.get(floor).add(cte);
         }
         notifyAll();
     }
@@ -330,7 +332,7 @@ public class CommandList {
         } else if (request.getFromFloor() < request.getToFloor()) {
             direction = CommandTableEntry.Direction.UP;
         } else {
-            direction = CommandTableEntry.Direction.END; // TODO = is END direction?
+            direction = CommandTableEntry.Direction.END;
         }
         notifyAll();
         return new CommandTableEntry(direction, request.getToFloor());
@@ -340,7 +342,7 @@ public class CommandList {
     public synchronized String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("@CommandList{\n");
-        for (int i = 0; i < maxFloor - minFloor + 1; i++) {
+        for (int i = minFloor; i <= maxFloor; i++) {
             sb.append(i).append(": ");
             for (CommandTableEntry c : commandTable.get(i)) {
                 sb.append(c.toString());
@@ -352,15 +354,27 @@ public class CommandList {
         return sb.toString();
     }
 
-    public synchronized void addReset(int capacity, double speed) {
+    public synchronized void addReset(int capacity, double speed, int transferFloor) {
         this.reset = true;
         this.resetLoad = capacity;
         this.resetSpeed = (int) (speed * 1000);
+        this.resetTransFloor = transferFloor;
         notifyAll();
     }
 
     public synchronized boolean isReset() {
         notifyAll();
         return reset;
+    }
+
+    public synchronized void setRange(int min, int max) {
+        for (int i = minFloor; i <= maxFloor; i++) {
+            if (i < min || i > max) {
+                commandTable.remove(i);
+            }
+        }
+        minFloor = min;
+        maxFloor = max;
+        notifyAll();
     }
 }

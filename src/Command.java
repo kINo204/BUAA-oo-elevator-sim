@@ -5,6 +5,7 @@ public class Command {
     private final boolean isReset;
     private final int resetLoad;
     private final int resetSpeed;
+    private final int resetTransFloor;
 
     public Command(int destination, int waitTime) {
         this.destination = destination;
@@ -12,14 +13,16 @@ public class Command {
         this.isReset = false;
         this.resetLoad = 0;
         this.resetSpeed = 0;
+        this.resetTransFloor = 0;
     }
 
-    public Command(boolean isReset, int resetLoad, int resetSpeed) {
+    public Command(boolean isReset, int resetLoad, int resetSpeed, int resetTransFloor) {
         this.destination = 0;
         this.waitTime = 0;
         this.isReset = isReset;
         this.resetLoad = resetLoad;
         this.resetSpeed = resetSpeed;
+        this.resetTransFloor = resetTransFloor;
     }
 
     public boolean isReset() {
@@ -33,6 +36,10 @@ public class Command {
     public int getWaitTime() { return waitTime; }
 
     public int getDestination() { return destination; }
+
+    public int getResetTransFloor() {
+        return resetTransFloor;
+    }
 
     @Override
     public String toString() {

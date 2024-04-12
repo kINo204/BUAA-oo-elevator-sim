@@ -1,20 +1,20 @@
 package tools;
 
-import com.oocourse.elevator2.TimableOutput;
+import com.oocourse.elevator3.TimableOutput;
 
 import java.util.HashMap;
 
 public class Debugger {
     private static final boolean debugOut = false;
     private static final HashMap<String, Boolean> infoSwitch = new HashMap<>();
-    private static final int eid = 2;
+    private static final String eid = "";
 
     static {
         infoSwitch.put("scheduler", false);
         infoSwitch.put("elevator", false);
         infoSwitch.put("elevator thread", true);
         infoSwitch.put("read requests", false);
-        infoSwitch.put("server", false);
+        infoSwitch.put("server", true);
         infoSwitch.put("reset", false);
         infoSwitch.put("commandlist", true);
         infoSwitch.put("command", true);
@@ -35,8 +35,12 @@ public class Debugger {
         }
     }
 
-    public static void dbgPrintln(Object o, String type, int selId) {
-        if (eid == selId) {
+    public static void dbgPrintln(Object o, String type, String selId) {
+        if (!eid.isEmpty()) {
+            if (eid.equals(selId)) {
+                dbgPrintln(o, type);
+            }
+        } else {
             dbgPrintln(o, type);
         }
     }
