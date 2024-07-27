@@ -1,9 +1,2 @@
 /.idea/
-/out/
-/tests/
-/dep/
-/docs/
-/META-INF/
 /.gitignore
-/src/TestMain.java
-/README.md

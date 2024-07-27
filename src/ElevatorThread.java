@@ -129,7 +129,7 @@ public class ElevatorThread extends Thread {
 
         int resetTransFloor = command.getResetTransFloor();
         if (resetTransFloor != 0) {
-            // TODO create para elevator and modify self
+            // CHECKME create para elevator and modify self
             ParaLock lock = new ParaLock();
             // create para
             String paraEid = eid + "-B";

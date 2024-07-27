@@ -1,0 +1,26 @@
+search for reqs(not in scheduled_reqs)
+
+if no req: do nothing
+if one req: req = this req
+if two req: req = req of shorter finding length
+
+NEW_COMMAND(req_from_floor, 0) # wait time ignored for now
+scheduled_reqs.add(req) # TODO we should del this later
+dst_list.add(req_to_floor)
+
+
+1. modify commandList according to req's from and to floor
+	- if from floor and direction are the same, do nothing
+2. scheduled.add()
+3. commandList.nextCommand() will find the next
+newCommand:(dst, 0)
+set the dst to the floor of the first found item below:
+a. from the current floor, to the current direction:
+look for a U/D same as the current direction; or an O
+if unable, look for a U/D of different direction
+b. if still unable, look to the reversed direction:
+look for a U/D same as the current direction; or an O
+if unable, look for a U/D of different direction
+c. if nothing found, do not give a command
+
+[0.0]1-FROM-4-TO-5-BY-1
